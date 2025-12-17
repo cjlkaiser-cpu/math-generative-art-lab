@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractales IFS - Sistemas de Funciones Iteradas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-text { text-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-emerald-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-emerald-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Fractales IFS</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-emerald-400 font-medium glow-text">Fractales</span> IFS
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="mono text-sm text-gray-500" id="info-points">0 puntos</span>
+                    <button id="btn-pause" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">Pausar</button>
+                    <button id="btn-reset" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm transition">Reset</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg"></canvas>
+                </div>
+                <p class="text-gray-600 text-sm text-center">El fractal emerge punto a punto mediante el algoritmo del juego del caos</p>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Transformación Afín</h3>
+                    <div class="mono text-sm text-emerald-400/80 space-y-1">
+                        <div>x' = ax + by + e</div>
+                        <div>y' = cx + dy + f</div>
+                    </div>
+                    <p class="mt-3 text-xs text-gray-600">Cada IFS es un conjunto de transformaciones afines. Aplicarlas aleatoriamente con las probabilidades correctas genera el fractal.</p>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Galería</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="fern">
+                            <div class="font-medium text-emerald-400">Helecho Barnsley</div>
+                            <div class="text-gray-600">4 transformaciones</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="tree">
+                            <div class="font-medium text-emerald-400">Árbol</div>
+                            <div class="text-gray-600">Ramificación</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="sierpinski">
+                            <div class="font-medium text-cyan-400">Sierpinski</div>
+                            <div class="text-gray-600">3 contracciones</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="carpet">
+                            <div class="font-medium text-cyan-400">Alfombra</div>
+                            <div class="text-gray-600">8 transformaciones</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="dragon">
+                            <div class="font-medium text-purple-400">Dragón</div>
+                            <div class="text-gray-600">Heighway</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="koch">
+                            <div class="font-medium text-purple-400">Copo Koch</div>
+                            <div class="text-gray-600">Curva cerrada</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="maple">
+                            <div class="font-medium text-orange-400">Hoja Maple</div>
+                            <div class="text-gray-600">Orgánico</div>
+                        </button>
+                        <button class="fractal-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-fractal="spiral">
+                            <div class="font-medium text-orange-400">Espiral</div>
+                            <div class="text-gray-600">Logarítmica</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5 slider-container">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Parámetros</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Puntos por frame</label>
+                                <span class="mono text-emerald-400" id="val-speed">500</span>
+                            </div>
+                            <input type="range" id="slider-speed" min="100" max="2000" step="100" value="500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Tamaño punto</label>
+                                <span class="mono text-emerald-400" id="val-size">1</span>
+                            </div>
+                            <input type="range" id="slider-size" min="0.5" max="3" step="0.5" value="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Color</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="green" style="background: linear-gradient(135deg, #10b981, #065f46)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="autumn" style="background: linear-gradient(135deg, #84cc16, #ea580c)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="ice" style="background: linear-gradient(135deg, #67e8f9, #1e3a8a)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="fire" style="background: linear-gradient(135deg, #fbbf24, #dc2626)"></button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Transformaciones</h3>
+                    <div class="mono text-xs text-gray-500 space-y-1 max-h-32 overflow-y-auto" id="transforms-info">
+                        <div>Cargando...</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Michael Barnsley, 1988</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">El helecho de Barnsley demuestra que estructuras complejas pueden codificarse en pocas transformaciones. Solo 4 ecuaciones generan un helecho realista de resolución infinita.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        let x = 0, y = 0;
+        let pointCount = 0;
+        let speed = 500;
+        let pointSize = 1;
+        let paused = false;
+        let colorScheme = 'green';
+        let currentFractal = 'fern';
+
+        const colorSchemes = {
+            green: (y, maxY) => `hsl(${140 + (y / maxY) * 30}, 70%, ${30 + (y / maxY) * 35}%)`,
+            autumn: (y, maxY) => `hsl(${80 - (y / maxY) * 60}, 75%, ${40 + (y / maxY) * 25}%)`,
+            ice: (y, maxY) => `hsl(${200 + (y / maxY) * 40}, 70%, ${40 + (y / maxY) * 35}%)`,
+            fire: (y, maxY) => `hsl(${40 - (y / maxY) * 30}, 90%, ${45 + (y / maxY) * 30}%)`
+        };
+
+        // IFS definitions: [a, b, c, d, e, f, probability]
+        const fractals = {
+            fern: {
+                name: 'Helecho de Barnsley',
+                transforms: [
+                    [0, 0, 0, 0.16, 0, 0, 0.01],
+                    [0.85, 0.04, -0.04, 0.85, 0, 1.6, 0.85],
+                    [0.2, -0.26, 0.23, 0.22, 0, 1.6, 0.07],
+                    [-0.15, 0.28, 0.26, 0.24, 0, 0.44, 0.07]
+                ],
+                scale: 45,
+                offsetY: 0.9
+            },
+            tree: {
+                name: 'Árbol',
+                transforms: [
+                    [0, 0, 0, 0.5, 0, 0, 0.05],
+                    [0.42, -0.42, 0.42, 0.42, 0, 0.2, 0.4],
+                    [0.42, 0.42, -0.42, 0.42, 0, 0.2, 0.4],
+                    [0.1, 0, 0, 0.1, 0, 0.2, 0.15]
+                ],
+                scale: 180,
+                offsetY: 0.85
+            },
+            sierpinski: {
+                name: 'Triángulo de Sierpinski',
+                transforms: [
+                    [0.5, 0, 0, 0.5, 0, 0, 0.33],
+                    [0.5, 0, 0, 0.5, 0.5, 0, 0.33],
+                    [0.5, 0, 0, 0.5, 0.25, 0.433, 0.34]
+                ],
+                scale: 350,
+                offsetY: 0.8
+            },
+            carpet: {
+                name: 'Alfombra de Sierpinski',
+                transforms: [
+                    [0.333, 0, 0, 0.333, 0, 0, 0.125],
+                    [0.333, 0, 0, 0.333, 0.333, 0, 0.125],
+                    [0.333, 0, 0, 0.333, 0.666, 0, 0.125],
+                    [0.333, 0, 0, 0.333, 0, 0.333, 0.125],
+                    [0.333, 0, 0, 0.333, 0.666, 0.333, 0.125],
+                    [0.333, 0, 0, 0.333, 0, 0.666, 0.125],
+                    [0.333, 0, 0, 0.333, 0.333, 0.666, 0.125],
+                    [0.333, 0, 0, 0.333, 0.666, 0.666, 0.125]
+                ],
+                scale: 300,
+                offsetY: 0.65
+            },
+            dragon: {
+                name: 'Dragón de Heighway',
+                transforms: [
+                    [0.5, -0.5, 0.5, 0.5, 0, 0, 0.5],
+                    [-0.5, -0.5, 0.5, -0.5, 1, 0, 0.5]
+                ],
+                scale: 250,
+                offsetY: 0.5
+            },
+            koch: {
+                name: 'Copo de Koch',
+                transforms: [
+                    [0.333, 0, 0, 0.333, 0, 0, 0.25],
+                    [0.167, -0.289, 0.289, 0.167, 0.333, 0, 0.25],
+                    [0.167, 0.289, -0.289, 0.167, 0.5, 0.289, 0.25],
+                    [0.333, 0, 0, 0.333, 0.666, 0, 0.25]
+                ],
+                scale: 400,
+                offsetY: 0.6
+            },
+            maple: {
+                name: 'Hoja de Maple',
+                transforms: [
+                    [0.14, 0.01, 0, 0.51, -0.08, -1.31, 0.1],
+                    [0.43, 0.52, -0.45, 0.5, 1.49, -0.75, 0.35],
+                    [0.45, -0.49, 0.47, 0.47, -1.62, -0.74, 0.35],
+                    [0.49, 0, 0, 0.51, 0.02, 1.62, 0.2]
+                ],
+                scale: 70,
+                offsetY: 0.4
+            },
+            spiral: {
+                name: 'Espiral',
+                transforms: [
+                    [0.787879, -0.424242, 0.242424, 0.859848, 1.758647, 1.408065, 0.895652],
+                    [-0.121212, 0.257576, 0.151515, 0.053030, -6.721654, 1.377236, 0.052174],
+                    [0.181818, -0.136364, 0.090909, 0.181818, 6.086107, 1.568035, 0.052174]
+                ],
+                scale: 25,
+                offsetY: 0.3
+            }
+        };
+
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width * 0.85, window.innerHeight - 300);
+            canvas.width = width;
+            canvas.height = height;
+            reset();
+        }
+
+        function reset() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            x = 0;
+            y = 0;
+            pointCount = 0;
+            updateTransformInfo();
+        }
+
+        function updateTransformInfo() {
+            const f = fractals[currentFractal];
+            let html = `<div class="text-emerald-400 mb-1">${f.name}</div>`;
+            f.transforms.forEach((t, i) => {
+                html += `<div>T${i + 1}: [${t[0].toFixed(2)}, ${t[1].toFixed(2)}, ${t[2].toFixed(2)}, ${t[3].toFixed(2)}] p=${(t[6] * 100).toFixed(0)}%</div>`;
+            });
+            document.getElementById('transforms-info').innerHTML = html;
+        }
+
+        function iterate() {
+            const f = fractals[currentFractal];
+            const transforms = f.transforms;
+
+            // Select transform based on probability
+            const r = Math.random();
+            let cumProb = 0;
+            let t = transforms[0];
+
+            for (const transform of transforms) {
+                cumProb += transform[6];
+                if (r <= cumProb) {
+                    t = transform;
+                    break;
+                }
+            }
+
+            // Apply affine transformation
+            const newX = t[0] * x + t[1] * y + t[4];
+            const newY = t[2] * x + t[3] * y + t[5];
+            x = newX;
+            y = newY;
+
+            return { x: newX, y: newY };
+        }
+
+        function draw() {
+            const f = fractals[currentFractal];
+            const colorFn = colorSchemes[colorScheme];
+
+            // Calculate bounds for this fractal
+            let minY = 0, maxY = 10;
+            if (currentFractal === 'fern') maxY = 10;
+            else if (currentFractal === 'sierpinski') maxY = 0.5;
+            else maxY = 3;
+
+            for (let i = 0; i < speed; i++) {
+                const pt = iterate();
+
+                // Skip first few points (warmup)
+                if (pointCount < 20) {
+                    pointCount++;
+                    continue;
+                }
+
+                const px = width / 2 + pt.x * f.scale;
+                const py = height * f.offsetY - pt.y * f.scale;
+
+                if (px >= 0 && px < width && py >= 0 && py < height) {
+                    ctx.fillStyle = colorFn(pt.y, maxY);
+                    ctx.fillRect(px, py, pointSize, pointSize);
+                }
+
+                pointCount++;
+            }
+
+            document.getElementById('info-points').textContent = pointCount.toLocaleString() + ' puntos';
+        }
+
+        function loop() {
+            if (!paused) draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Events
+        document.querySelectorAll('.fractal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFractal = btn.dataset.fractal;
+                document.querySelectorAll('.fractal-btn').forEach(b => b.classList.remove('ring-2', 'ring-emerald-500'));
+                btn.classList.add('ring-2', 'ring-emerald-500');
+                reset();
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorScheme = btn.dataset.scheme;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+                reset();
+            });
+        });
+
+        document.getElementById('slider-speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('val-speed').textContent = speed;
+        });
+
+        document.getElementById('slider-size').addEventListener('input', e => {
+            pointSize = parseFloat(e.target.value);
+            document.getElementById('val-size').textContent = pointSize;
+        });
+
+        document.getElementById('btn-pause').addEventListener('click', e => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Reanudar' : 'Pausar';
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', reset);
+
+        window.addEventListener('load', () => {
+            init();
+            document.querySelector('.fractal-btn').classList.add('ring-2', 'ring-emerald-500');
+            document.querySelector('.color-btn').classList.add('ring-white');
+            loop();
+        });
+
+        window.addEventListener('resize', init);
+    </script>
+</body>
+</html>

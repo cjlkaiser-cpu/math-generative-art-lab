@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phyllotaxis - Espirales de Fibonacci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-text { text-shadow: 0 0 20px rgba(250, 204, 21, 0.5); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #facc15;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-yellow-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-yellow-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Phyllotaxis</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-yellow-400 font-medium glow-text">Phyllo</span>taxis
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="mono text-sm text-gray-500" id="info-count">0 semillas</span>
+                    <button id="btn-animate" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">Animar</button>
+                    <button id="btn-reset" class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-sm transition">Reset</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg"></canvas>
+                </div>
+                <p class="text-gray-600 text-sm text-center">Ajusta el ángulo para ver cómo pequeños cambios alteran los patrones</p>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Ángulo Áureo</h3>
+                    <div class="mono text-sm text-yellow-400/80 space-y-1">
+                        <div>θₙ = n · α</div>
+                        <div>rₙ = c · √n</div>
+                        <div class="text-xs text-gray-500 mt-2">α = 360° / φ² ≈ 137.507764°</div>
+                    </div>
+                    <p class="mt-3 text-xs text-gray-600">El ángulo áureo (137.5°) es el único que produce patrones sin huecos ni superposiciones. Cualquier otro ángulo crea líneas visibles.</p>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="137.507764" data-scale="5" data-size="4">
+                            <div class="font-medium text-yellow-400">Girasol</div>
+                            <div class="text-gray-600">Ángulo áureo</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="137.3" data-scale="5" data-size="4">
+                            <div class="font-medium text-yellow-400">Casi áureo</div>
+                            <div class="text-gray-600">137.3° - visible</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="99.5" data-scale="6" data-size="5">
+                            <div class="font-medium text-yellow-400">Piña</div>
+                            <div class="text-gray-600">99.5°</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="222.5" data-scale="5" data-size="4">
+                            <div class="font-medium text-yellow-400">Complemento</div>
+                            <div class="text-gray-600">360° - 137.5°</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="90" data-scale="8" data-size="6">
+                            <div class="font-medium text-orange-400">Cruz</div>
+                            <div class="text-gray-600">90°</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="120" data-scale="8" data-size="6">
+                            <div class="font-medium text-orange-400">Triángulo</div>
+                            <div class="text-gray-600">120°</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="144" data-scale="6" data-size="5">
+                            <div class="font-medium text-orange-400">Pentágono</div>
+                            <div class="text-gray-600">144°</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-angle="180" data-scale="10" data-size="8">
+                            <div class="font-medium text-orange-400">Línea</div>
+                            <div class="text-gray-600">180°</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5 slider-container">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Parámetros</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Ángulo</label>
+                                <span class="mono text-yellow-400" id="val-angle">137.507764°</span>
+                            </div>
+                            <input type="range" id="slider-angle" min="0" max="360" step="0.01" value="137.507764">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Semillas</label>
+                                <span class="mono text-yellow-400" id="val-count">500</span>
+                            </div>
+                            <input type="range" id="slider-count" min="50" max="2000" step="50" value="500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Escala</label>
+                                <span class="mono text-yellow-400" id="val-scale">5</span>
+                            </div>
+                            <input type="range" id="slider-scale" min="2" max="15" step="0.5" value="5">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Tamaño</label>
+                                <span class="mono text-yellow-400" id="val-size">4</span>
+                            </div>
+                            <input type="range" id="slider-size" min="1" max="15" step="0.5" value="4">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Forma</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="shape-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs transition" data-shape="circle">Círculo</button>
+                        <button class="shape-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs transition" data-shape="square">Cuadro</button>
+                        <button class="shape-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs transition" data-shape="petal">Pétalo</button>
+                        <button class="shape-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs transition" data-shape="seed">Semilla</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Color</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="sunflower" style="background: linear-gradient(135deg, #facc15, #ea580c)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="succulent" style="background: linear-gradient(135deg, #22c55e, #14b8a6)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="rose" style="background: linear-gradient(135deg, #ec4899, #f43f5e)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="rainbow" style="background: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6)"></button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Fibonacci en la naturaleza</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">Las espirales de Fibonacci (1, 1, 2, 3, 5, 8, 13, 21, 34...) aparecen en girasoles, piñas, alcachofas y suculentas. El ángulo áureo maximiza el empaquetamiento de semillas.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        let angle = 137.507764;
+        let seedCount = 500;
+        let scale = 5;
+        let seedSize = 4;
+        let shape = 'circle';
+        let palette = 'sunflower';
+        let isAnimating = false;
+        let currentSeed = 0;
+        let animationId = null;
+
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const GOLDEN_ANGLE = 360 / (PHI * PHI);
+
+        const palettes = {
+            sunflower: (t, n) => `hsl(${40 + t * 20}, 80%, ${45 + Math.sin(n * 0.1) * 15}%)`,
+            succulent: (t, n) => `hsl(${140 + t * 40}, 60%, ${35 + t * 25}%)`,
+            rose: (t, n) => `hsl(${330 + t * 30}, 70%, ${45 + t * 20}%)`,
+            rainbow: (t, n) => `hsl(${n * 2 % 360}, 70%, 55%)`
+        };
+
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width, window.innerHeight - 300);
+            canvas.width = width;
+            canvas.height = height;
+            draw();
+        }
+
+        function drawSeed(x, y, size, color, n) {
+            ctx.fillStyle = color;
+
+            switch (shape) {
+                case 'circle':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+                case 'square':
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(n * angle * Math.PI / 180);
+                    ctx.fillRect(-size, -size, size * 2, size * 2);
+                    ctx.restore();
+                    break;
+                case 'petal':
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(n * angle * Math.PI / 180);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, size * 0.5, size * 1.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                    break;
+                case 'seed':
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(n * angle * Math.PI / 180 + Math.PI / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size);
+                    ctx.quadraticCurveTo(size * 0.8, 0, 0, size);
+                    ctx.quadraticCurveTo(-size * 0.8, 0, 0, -size);
+                    ctx.fill();
+                    ctx.restore();
+                    break;
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height / 2;
+            const colorFn = palettes[palette];
+            const count = isAnimating ? currentSeed : seedCount;
+
+            for (let n = 0; n < count; n++) {
+                const theta = n * angle * Math.PI / 180;
+                const r = scale * Math.sqrt(n);
+                const x = cx + r * Math.cos(theta);
+                const y = cy + r * Math.sin(theta);
+
+                const t = n / seedCount;
+                const size = seedSize * (0.5 + t * 0.5);
+                const color = colorFn(t, n);
+
+                drawSeed(x, y, size, color, n);
+            }
+
+            document.getElementById('info-count').textContent = count + ' semillas';
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+
+            currentSeed = Math.min(currentSeed + 5, seedCount);
+            draw();
+
+            if (currentSeed < seedCount) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                isAnimating = false;
+                document.getElementById('btn-animate').textContent = 'Animar';
+            }
+        }
+
+        // Events
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                angle = parseFloat(btn.dataset.angle);
+                scale = parseFloat(btn.dataset.scale);
+                seedSize = parseFloat(btn.dataset.size);
+                document.getElementById('slider-angle').value = angle;
+                document.getElementById('slider-scale').value = scale;
+                document.getElementById('slider-size').value = seedSize;
+                document.getElementById('val-angle').textContent = angle.toFixed(6) + '°';
+                document.getElementById('val-scale').textContent = scale;
+                document.getElementById('val-size').textContent = seedSize;
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('ring-2', 'ring-yellow-500'));
+                btn.classList.add('ring-2', 'ring-yellow-500');
+                draw();
+            });
+        });
+
+        document.querySelectorAll('.shape-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                shape = btn.dataset.shape;
+                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('ring-2', 'ring-yellow-500'));
+                btn.classList.add('ring-2', 'ring-yellow-500');
+                draw();
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                palette = btn.dataset.palette;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+                draw();
+            });
+        });
+
+        document.getElementById('slider-angle').addEventListener('input', e => {
+            angle = parseFloat(e.target.value);
+            document.getElementById('val-angle').textContent = angle.toFixed(6) + '°';
+            draw();
+        });
+        document.getElementById('slider-count').addEventListener('input', e => {
+            seedCount = parseInt(e.target.value);
+            document.getElementById('val-count').textContent = seedCount;
+            draw();
+        });
+        document.getElementById('slider-scale').addEventListener('input', e => {
+            scale = parseFloat(e.target.value);
+            document.getElementById('val-scale').textContent = scale;
+            draw();
+        });
+        document.getElementById('slider-size').addEventListener('input', e => {
+            seedSize = parseFloat(e.target.value);
+            document.getElementById('val-size').textContent = seedSize;
+            draw();
+        });
+
+        document.getElementById('btn-animate').addEventListener('click', () => {
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationId) cancelAnimationFrame(animationId);
+                document.getElementById('btn-animate').textContent = 'Animar';
+            } else {
+                currentSeed = 0;
+                isAnimating = true;
+                document.getElementById('btn-animate').textContent = 'Detener';
+                animate();
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            angle = GOLDEN_ANGLE;
+            document.getElementById('slider-angle').value = angle;
+            document.getElementById('val-angle').textContent = angle.toFixed(6) + '°';
+            draw();
+        });
+
+        window.addEventListener('load', () => {
+            init();
+            document.querySelector('.preset-btn').classList.add('ring-2', 'ring-yellow-500');
+            document.querySelector('.shape-btn').classList.add('ring-2', 'ring-yellow-500');
+            document.querySelector('.color-btn').classList.add('ring-white');
+        });
+        window.addEventListener('resize', init);
+    </script>
+</body>
+</html>

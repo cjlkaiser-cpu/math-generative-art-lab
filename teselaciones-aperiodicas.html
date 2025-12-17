@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teselaciones Aperiódicas - Penrose</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-text { text-shadow: 0 0 20px rgba(249, 115, 22, 0.5); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #f97316;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-orange-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-orange-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Teselaciones Aperiódicas</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-orange-400 font-medium glow-text">Teselaciones</span> Aperiódicas
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="mono text-sm text-gray-500" id="info-tiles">0 tiles</span>
+                    <button id="btn-subdivide" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">Subdividir</button>
+                    <button id="btn-reset" class="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-sm transition">Reset</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg"></canvas>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>Nivel: <span id="info-level" class="text-orange-400">0</span></span>
+                    <span>Arrastra para mover · Rueda para zoom</span>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Proporción Áurea</h3>
+                    <div class="mono text-sm text-orange-400/80 space-y-1">
+                        <div>φ = (1 + √5) / 2 ≈ 1.618</div>
+                        <div>φ² = φ + 1</div>
+                    </div>
+                    <p class="mt-3 text-xs text-gray-600">Los tiles de Penrose tienen lados en proporción áurea. Al subdividir, cada tile se divide en tiles más pequeños, pero el patrón nunca se repite.</p>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Tipo de Teselación</h3>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="tiling-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-tiling="penrose">
+                            <div class="font-medium text-orange-400">Penrose P3 (Rombos)</div>
+                            <div class="text-gray-600">Kite y Dart - la más famosa</div>
+                        </button>
+                        <button class="tiling-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-tiling="penrose-rhomb">
+                            <div class="font-medium text-orange-400">Penrose P2 (Rombos finos)</div>
+                            <div class="text-gray-600">Thin y Thick rhombus</div>
+                        </button>
+                        <button class="tiling-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-tiling="ammann">
+                            <div class="font-medium text-yellow-400">Ammann-Beenker</div>
+                            <div class="text-gray-600">Simetría 8-fold</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5 slider-container">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Visualización</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Tamaño inicial</label>
+                                <span class="mono text-orange-400" id="val-size">200</span>
+                            </div>
+                            <input type="range" id="slider-size" min="100" max="400" step="25" value="200">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Grosor línea</label>
+                                <span class="mono text-orange-400" id="val-stroke">1</span>
+                            </div>
+                            <input type="range" id="slider-stroke" min="0.5" max="3" step="0.5" value="1">
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <label class="text-xs text-gray-500">Mostrar bordes</label>
+                        <input type="checkbox" id="check-edges" class="w-4 h-4 accent-orange-500" checked>
+                        <label class="text-xs text-gray-500 ml-4">Colorear por tipo</label>
+                        <input type="checkbox" id="check-color" class="w-4 h-4 accent-orange-500" checked>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Paleta</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="classic" style="background: linear-gradient(135deg, #f97316, #eab308)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="ocean" style="background: linear-gradient(135deg, #0ea5e9, #6366f1)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="forest" style="background: linear-gradient(135deg, #22c55e, #14b8a6)"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="sunset" style="background: linear-gradient(135deg, #ec4899, #f97316)"></button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Estadísticas</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-gray-900 rounded-lg p-2">
+                            <div class="text-gray-500">Kites</div>
+                            <div class="mono text-orange-400" id="stat-kites">0</div>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-2">
+                            <div class="text-gray-500">Darts</div>
+                            <div class="mono text-yellow-400" id="stat-darts">0</div>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-2">
+                            <div class="text-gray-500">Ratio</div>
+                            <div class="mono text-gray-400" id="stat-ratio">-</div>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-2">
+                            <div class="text-gray-500">φ esperado</div>
+                            <div class="mono text-gray-400">1.618...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Roger Penrose, 1974</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">Descubrió que solo dos formas pueden teselar el plano de forma aperiódica. El ratio de kites a darts converge a φ. En 1984 se descubrieron cuasicristales reales con esta estructura.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const DEG36 = Math.PI / 5;
+        const DEG72 = 2 * Math.PI / 5;
+
+        let tiles = [];
+        let level = 0;
+        let initialSize = 200;
+        let strokeWidth = 1;
+        let showEdges = true;
+        let colorByType = true;
+        let currentTiling = 'penrose';
+        let palette = 'classic';
+
+        let panX = 0, panY = 0;
+        let zoom = 1;
+        let isDragging = false;
+        let lastMouse = { x: 0, y: 0 };
+
+        const palettes = {
+            classic: { kite: '#f97316', dart: '#eab308', stroke: '#000' },
+            ocean: { kite: '#0ea5e9', dart: '#6366f1', stroke: '#1e3a8a' },
+            forest: { kite: '#22c55e', dart: '#14b8a6', stroke: '#064e3b' },
+            sunset: { kite: '#ec4899', dart: '#f97316', stroke: '#4c0519' }
+        };
+
+        // Triangle representation for Penrose tiling
+        // type: 0 = red (kite half), 1 = blue (dart half)
+        // A, B, C are vertices (complex numbers as {re, im})
+
+        function createSun() {
+            tiles = [];
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Create initial "sun" - 10 triangles around center
+            for (let i = 0; i < 10; i++) {
+                const angle1 = (2 * i - 1) * DEG36;
+                const angle2 = (2 * i + 1) * DEG36;
+
+                const A = { re: cx, im: cy };
+                const B = { re: cx + initialSize * Math.cos(angle1), im: cy + initialSize * Math.sin(angle1) };
+                const C = { re: cx + initialSize * Math.cos(angle2), im: cy + initialSize * Math.sin(angle2) };
+
+                if (i % 2 === 0) {
+                    tiles.push({ type: 0, A, B, C }); // Red kite half
+                } else {
+                    tiles.push({ type: 0, A, C, B }); // Red kite half (mirrored)
+                }
+            }
+            level = 0;
+        }
+
+        function subdivide() {
+            const newTiles = [];
+
+            for (const tile of tiles) {
+                const { type, A, B, C } = tile;
+
+                if (type === 0) {
+                    // Subdivide red (kite) triangle
+                    // P = A + (B - A) / φ
+                    const P = {
+                        re: A.re + (B.re - A.re) / PHI,
+                        im: A.im + (B.im - A.im) / PHI
+                    };
+
+                    newTiles.push({ type: 0, A: C, B: P, C: B });
+                    newTiles.push({ type: 1, A: P, B: C, C: A });
+                } else {
+                    // Subdivide blue (dart) triangle
+                    // Q = B + (A - B) / φ
+                    // R = B + (C - B) / φ
+                    const Q = {
+                        re: B.re + (A.re - B.re) / PHI,
+                        im: B.im + (A.im - B.im) / PHI
+                    };
+                    const R = {
+                        re: B.re + (C.re - B.re) / PHI,
+                        im: B.im + (C.im - B.im) / PHI
+                    };
+
+                    newTiles.push({ type: 1, A: R, B: C, C: A });
+                    newTiles.push({ type: 1, A: Q, B: R, C: B });
+                    newTiles.push({ type: 0, A: R, B: Q, C: A });
+                }
+            }
+
+            tiles = newTiles;
+            level++;
+        }
+
+        function transform(p) {
+            return {
+                x: (p.re - width / 2) * zoom + width / 2 + panX,
+                y: (p.im - height / 2) * zoom + height / 2 + panY
+            };
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            const colors = palettes[palette];
+            let kiteCount = 0;
+            let dartCount = 0;
+
+            for (const tile of tiles) {
+                const A = transform(tile.A);
+                const B = transform(tile.B);
+                const C = transform(tile.C);
+
+                ctx.beginPath();
+                ctx.moveTo(A.x, A.y);
+                ctx.lineTo(B.x, B.y);
+                ctx.lineTo(C.x, C.y);
+                ctx.closePath();
+
+                if (colorByType) {
+                    if (tile.type === 0) {
+                        ctx.fillStyle = colors.kite + '90';
+                        kiteCount++;
+                    } else {
+                        ctx.fillStyle = colors.dart + '90';
+                        dartCount++;
+                    }
+                } else {
+                    ctx.fillStyle = colors.kite + '60';
+                }
+                ctx.fill();
+
+                if (showEdges) {
+                    ctx.strokeStyle = colors.stroke;
+                    ctx.lineWidth = strokeWidth;
+                    ctx.stroke();
+                }
+            }
+
+            // Update stats (divide by 2 because each tile is made of 2 triangles)
+            document.getElementById('info-tiles').textContent = tiles.length + ' triángulos';
+            document.getElementById('info-level').textContent = level;
+            document.getElementById('stat-kites').textContent = Math.floor(kiteCount / 2);
+            document.getElementById('stat-darts').textContent = Math.floor(dartCount / 2);
+
+            if (dartCount > 0) {
+                const ratio = kiteCount / dartCount;
+                document.getElementById('stat-ratio').textContent = ratio.toFixed(3);
+            }
+        }
+
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width * 0.85, window.innerHeight - 300);
+            canvas.width = width;
+            canvas.height = height;
+            createSun();
+            draw();
+        }
+
+        // Events
+        document.querySelectorAll('.tiling-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentTiling = btn.dataset.tiling;
+                document.querySelectorAll('.tiling-btn').forEach(b => b.classList.remove('ring-2', 'ring-orange-500'));
+                btn.classList.add('ring-2', 'ring-orange-500');
+                createSun();
+                draw();
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                palette = btn.dataset.palette;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+                draw();
+            });
+        });
+
+        document.getElementById('slider-size').addEventListener('input', e => {
+            initialSize = parseInt(e.target.value);
+            document.getElementById('val-size').textContent = initialSize;
+        });
+        document.getElementById('slider-size').addEventListener('change', () => {
+            createSun();
+            draw();
+        });
+
+        document.getElementById('slider-stroke').addEventListener('input', e => {
+            strokeWidth = parseFloat(e.target.value);
+            document.getElementById('val-stroke').textContent = strokeWidth;
+            draw();
+        });
+
+        document.getElementById('check-edges').addEventListener('change', e => {
+            showEdges = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('check-color').addEventListener('change', e => {
+            colorByType = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('btn-subdivide').addEventListener('click', () => {
+            if (tiles.length < 50000) {
+                subdivide();
+                draw();
+            } else {
+                alert('Demasiados tiles. Haz reset para continuar.');
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            panX = 0;
+            panY = 0;
+            zoom = 1;
+            createSun();
+            draw();
+        });
+
+        // Pan and zoom
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouse = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            panX += e.clientX - lastMouse.x;
+            panY += e.clientY - lastMouse.y;
+            lastMouse = { x: e.clientX, y: e.clientY };
+            draw();
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= delta;
+            zoom = Math.max(0.2, Math.min(5, zoom));
+            draw();
+        });
+
+        // Keyboard
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (tiles.length < 50000) {
+                    subdivide();
+                    draw();
+                }
+            }
+        });
+
+        window.addEventListener('load', () => {
+            init();
+            document.querySelector('.tiling-btn').classList.add('ring-2', 'ring-orange-500');
+            document.querySelector('.color-btn').classList.add('ring-white');
+        });
+
+        window.addEventListener('resize', init);
+    </script>
+</body>
+</html>

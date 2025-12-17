@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Fields - Campos de Flujo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-text { text-shadow: 0 0 20px rgba(34, 211, 238, 0.5); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #22d3ee;
+            cursor: pointer;
+        }
+        .preset-btn:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-cyan-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-cyan-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Flow Fields</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-cyan-400 font-medium glow-text">Flow</span> Fields
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="mono text-sm text-gray-500" id="particle-count">0 partículas</span>
+                    <button id="btn-clear" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">Limpiar</button>
+                    <button id="btn-reset" class="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg text-sm transition">Reset</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg cursor-crosshair"></canvas>
+                </div>
+                <p class="text-gray-600 text-sm text-center">Click para añadir partículas · El campo evoluciona con el tiempo</p>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Perlin Noise Field</h3>
+                    <div class="mono text-sm text-cyan-400/80">θ(x,y,t) = noise(x·s, y·s, t) · 2π</div>
+                    <p class="mt-3 text-xs text-gray-600">Cada punto del espacio tiene un ángulo determinado por ruido coherente. Las partículas siguen estos vectores creando trazos fluidos.</p>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-scale="0.005" data-speed="2" data-particles="3000" data-fade="0.03">
+                            <div class="font-medium text-cyan-400">Suave</div>
+                            <div class="text-gray-600">Trazos largos</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-scale="0.02" data-speed="3" data-particles="5000" data-fade="0.05">
+                            <div class="font-medium text-cyan-400">Turbulento</div>
+                            <div class="text-gray-600">Caótico</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-scale="0.008" data-speed="1" data-particles="2000" data-fade="0.01">
+                            <div class="font-medium text-cyan-400">Van Gogh</div>
+                            <div class="text-gray-600">Pinceladas</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-scale="0.015" data-speed="4" data-particles="8000" data-fade="0.08">
+                            <div class="font-medium text-cyan-400">Tormenta</div>
+                            <div class="text-gray-600">Intenso</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5 slider-container">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Parámetros</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Escala del Noise</label>
+                                <span class="mono text-cyan-400" id="val-scale">0.008</span>
+                            </div>
+                            <input type="range" id="slider-scale" min="0.001" max="0.03" step="0.001" value="0.008">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Velocidad</label>
+                                <span class="mono text-cyan-400" id="val-speed">2</span>
+                            </div>
+                            <input type="range" id="slider-speed" min="0.5" max="5" step="0.5" value="2">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Partículas</label>
+                                <span class="mono text-cyan-400" id="val-particles">3000</span>
+                            </div>
+                            <input type="range" id="slider-particles" min="500" max="10000" step="500" value="3000">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Desvanecimiento</label>
+                                <span class="mono text-cyan-400" id="val-fade">0.03</span>
+                            </div>
+                            <input type="range" id="slider-fade" min="0.005" max="0.15" step="0.005" value="0.03">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Evolución temporal</label>
+                                <span class="mono text-cyan-400" id="val-time">0.001</span>
+                            </div>
+                            <input type="range" id="slider-time" min="0" max="0.005" step="0.0005" value="0.001">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Paleta</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="palette-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="cyan" style="background: linear-gradient(135deg, #06b6d4, #3b82f6)"></button>
+                        <button class="palette-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="fire" style="background: linear-gradient(135deg, #f97316, #dc2626)"></button>
+                        <button class="palette-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="aurora" style="background: linear-gradient(135deg, #22c55e, #a855f7)"></button>
+                        <button class="palette-btn w-full aspect-square rounded-lg ring-2 ring-transparent hover:ring-white/50 transition" data-palette="mono" style="background: linear-gradient(135deg, #fff, #666)"></button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Ken Perlin, 1983</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">Creó el ruido Perlin para la película TRON. A diferencia del ruido aleatorio puro, el Perlin es "coherente": valores cercanos producen resultados similares, creando texturas orgánicas.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let noiseScale = 0.008;
+        let speed = 2;
+        let particleCount = 3000;
+        let fadeAlpha = 0.03;
+        let timeScale = 0.001;
+        let time = 0;
+        let palette = 'cyan';
+
+        const palettes = {
+            cyan: (t) => `hsl(${180 + t * 40}, 70%, 60%)`,
+            fire: (t) => `hsl(${20 + t * 30}, 80%, 55%)`,
+            aurora: (t) => `hsl(${120 + t * 150}, 70%, 55%)`,
+            mono: (t) => `hsl(0, 0%, ${50 + t * 40}%)`
+        };
+
+        // Perlin noise implementation
+        const permutation = [];
+        for (let i = 0; i < 256; i++) permutation[i] = i;
+        for (let i = 255; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [permutation[i], permutation[j]] = [permutation[j], permutation[i]];
+        }
+        const p = [...permutation, ...permutation];
+
+        function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+        function lerp(a, b, t) { return a + t * (b - a); }
+        function grad(hash, x, y, z) {
+            const h = hash & 15;
+            const u = h < 8 ? x : y;
+            const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+            return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+        }
+
+        function noise3D(x, y, z) {
+            const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+            x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+            const u = fade(x), v = fade(y), w = fade(z);
+            const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z;
+            const B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+            return lerp(lerp(lerp(grad(p[AA], x, y, z), grad(p[BA], x - 1, y, z), u),
+                lerp(grad(p[AB], x, y - 1, z), grad(p[BB], x - 1, y - 1, z), u), v),
+                lerp(lerp(grad(p[AA + 1], x, y, z - 1), grad(p[BA + 1], x - 1, y, z - 1), u),
+                lerp(grad(p[AB + 1], x, y - 1, z - 1), grad(p[BB + 1], x - 1, y - 1, z - 1), u), v), w);
+        }
+
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width * 0.7, window.innerHeight - 300);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            resetParticles();
+        }
+
+        function resetParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    age: Math.random() * 100,
+                    maxAge: 50 + Math.random() * 100
+                });
+            }
+        }
+
+        function update() {
+            time += timeScale;
+            for (const p of particles) {
+                const angle = noise3D(p.x * noiseScale, p.y * noiseScale, time) * Math.PI * 4;
+                p.prevX = p.x;
+                p.prevY = p.y;
+                p.x += Math.cos(angle) * speed;
+                p.y += Math.sin(angle) * speed;
+                p.age++;
+
+                if (p.x < 0 || p.x > width || p.y < 0 || p.y > height || p.age > p.maxAge) {
+                    p.x = Math.random() * width;
+                    p.y = Math.random() * height;
+                    p.prevX = p.x;
+                    p.prevY = p.y;
+                    p.age = 0;
+                    p.maxAge = 50 + Math.random() * 100;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
+            ctx.fillRect(0, 0, width, height);
+
+            const colorFn = palettes[palette];
+            for (const p of particles) {
+                if (p.prevX === undefined) continue;
+                const t = (noise3D(p.x * 0.01, p.y * 0.01, 0) + 1) / 2;
+                ctx.strokeStyle = colorFn(t);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(p.prevX, p.prevY);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            document.getElementById('particle-count').textContent = particles.length + ' partículas';
+            requestAnimationFrame(loop);
+        }
+
+        // Events
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                noiseScale = parseFloat(btn.dataset.scale);
+                speed = parseFloat(btn.dataset.speed);
+                particleCount = parseInt(btn.dataset.particles);
+                fadeAlpha = parseFloat(btn.dataset.fade);
+                document.getElementById('slider-scale').value = noiseScale;
+                document.getElementById('slider-speed').value = speed;
+                document.getElementById('slider-particles').value = particleCount;
+                document.getElementById('slider-fade').value = fadeAlpha;
+                document.getElementById('val-scale').textContent = noiseScale;
+                document.getElementById('val-speed').textContent = speed;
+                document.getElementById('val-particles').textContent = particleCount;
+                document.getElementById('val-fade').textContent = fadeAlpha;
+                resetParticles();
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('ring-2', 'ring-cyan-500'));
+                btn.classList.add('ring-2', 'ring-cyan-500');
+            });
+        });
+
+        document.querySelectorAll('.palette-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                palette = btn.dataset.palette;
+                document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+            });
+        });
+
+        document.getElementById('slider-scale').addEventListener('input', e => {
+            noiseScale = parseFloat(e.target.value);
+            document.getElementById('val-scale').textContent = noiseScale;
+        });
+        document.getElementById('slider-speed').addEventListener('input', e => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('val-speed').textContent = speed;
+        });
+        document.getElementById('slider-particles').addEventListener('input', e => {
+            particleCount = parseInt(e.target.value);
+            document.getElementById('val-particles').textContent = particleCount;
+            resetParticles();
+        });
+        document.getElementById('slider-fade').addEventListener('input', e => {
+            fadeAlpha = parseFloat(e.target.value);
+            document.getElementById('val-fade').textContent = fadeAlpha;
+        });
+        document.getElementById('slider-time').addEventListener('input', e => {
+            timeScale = parseFloat(e.target.value);
+            document.getElementById('val-time').textContent = timeScale;
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+        });
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            time = 0;
+            resetParticles();
+        });
+
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            for (let i = 0; i < 200; i++) {
+                particles.push({
+                    x: x + (Math.random() - 0.5) * 50,
+                    y: y + (Math.random() - 0.5) * 50,
+                    age: 0,
+                    maxAge: 50 + Math.random() * 100
+                });
+            }
+        });
+
+        window.addEventListener('load', () => {
+            init();
+            document.querySelector('.preset-btn').classList.add('ring-2', 'ring-cyan-500');
+            document.querySelector('.palette-btn').classList.add('ring-white');
+            loop();
+        });
+        window.addEventListener('resize', init);
+    </script>
+</body>
+</html>

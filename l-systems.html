@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-Systems - Gramáticas Formales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #22c55e;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        .preset-btn {
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            transform: translateY(-2px);
+        }
+        textarea {
+            resize: none;
+        }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-green-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-green-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">L-Systems</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-green-400 font-medium glow-text">L</span>-Systems
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="btn-animate" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">
+                        Animar
+                    </button>
+                    <button id="btn-generate" class="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm transition">
+                        Generar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_350px] gap-8">
+            <!-- Canvas -->
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg bg-black"></canvas>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600">Iteraciones: <span id="info-iterations" class="text-green-400 mono">0</span></span>
+                    <span class="text-gray-600">Símbolos: <span id="info-symbols" class="text-green-400 mono">0</span></span>
+                    <span class="text-gray-600">Segmentos: <span id="info-segments" class="text-green-400 mono">0</span></span>
+                </div>
+            </div>
+
+            <!-- Panel de Control -->
+            <div class="space-y-6">
+                <!-- Concepto -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Gramática Formal</h3>
+                    <div class="space-y-2 mono text-sm text-green-400/80">
+                        <div>Axioma → Reglas → Dibujo</div>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-600">
+                        <p><strong>F</strong>: avanzar dibujando</p>
+                        <p><strong>G</strong>: avanzar sin dibujar</p>
+                        <p><strong>+</strong>: girar derecha</p>
+                        <p><strong>-</strong>: girar izquierda</p>
+                        <p><strong>[</strong>: guardar posición</p>
+                        <p><strong>]</strong>: restaurar posición</p>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F"
+                            data-rules="F=FF+[+F-F-F]-[-F+F+F]"
+                            data-angle="22"
+                            data-iterations="4"
+                            data-length="8">
+                            <div class="font-medium text-green-400">Arbusto</div>
+                            <div class="text-gray-600 truncate">F→FF+[+F-F-F]-[-F+F+F]</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="X"
+                            data-rules="X=F+[[X]-X]-F[-FX]+X,F=FF"
+                            data-angle="25"
+                            data-iterations="5"
+                            data-length="5">
+                            <div class="font-medium text-green-400">Planta</div>
+                            <div class="text-gray-600 truncate">X→F+[[X]-X]-F[-FX]+X</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F"
+                            data-rules="F=F[+F]F[-F]F"
+                            data-angle="25.7"
+                            data-iterations="5"
+                            data-length="5">
+                            <div class="font-medium text-green-400">Hierba</div>
+                            <div class="text-gray-600 truncate">F→F[+F]F[-F]F</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F"
+                            data-rules="F=F[-F]F[+F][F]"
+                            data-angle="20"
+                            data-iterations="5"
+                            data-length="6">
+                            <div class="font-medium text-green-400">Árbol</div>
+                            <div class="text-gray-600 truncate">F→F[-F]F[+F][F]</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F++F++F"
+                            data-rules="F=F-F++F-F"
+                            data-angle="60"
+                            data-iterations="4"
+                            data-length="6">
+                            <div class="font-medium text-cyan-400">Koch</div>
+                            <div class="text-gray-600 truncate">F→F-F++F-F</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F-G-G"
+                            data-rules="F=F-G+F+G-F,G=GG"
+                            data-angle="120"
+                            data-iterations="6"
+                            data-length="6">
+                            <div class="font-medium text-cyan-400">Sierpinski</div>
+                            <div class="text-gray-600 truncate">F→F-G+F+G-F</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="FX"
+                            data-rules="X=X+YF+,Y=-FX-Y"
+                            data-angle="90"
+                            data-iterations="12"
+                            data-length="6">
+                            <div class="font-medium text-purple-400">Dragón</div>
+                            <div class="text-gray-600 truncate">X→X+YF+</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="A"
+                            data-rules="A=-BF+AFA+FB-,B=+AF-BFB-FA+"
+                            data-angle="90"
+                            data-iterations="5"
+                            data-length="6">
+                            <div class="font-medium text-purple-400">Hilbert</div>
+                            <div class="text-gray-600 truncate">A→-BF+AFA+FB-</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F-F-F-F"
+                            data-rules="F=FF-F-F-F-F-F+F"
+                            data-angle="90"
+                            data-iterations="4"
+                            data-length="5">
+                            <div class="font-medium text-orange-400">Isla</div>
+                            <div class="text-gray-600 truncate">F→FF-F-F-F-F-F+F</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition"
+                            data-axiom="F+F+F+F"
+                            data-rules="F=FF+F+F+F+FF"
+                            data-angle="90"
+                            data-iterations="4"
+                            data-length="5">
+                            <div class="font-medium text-orange-400">Cristal</div>
+                            <div class="text-gray-600 truncate">F→FF+F+F+F+FF</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Editor de Reglas -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Editor</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Axioma</label>
+                            <input type="text" id="input-axiom" value="F"
+                                class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 mono text-sm text-green-400">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Reglas (una por línea: F=...)</label>
+                            <textarea id="input-rules" rows="3"
+                                class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 mono text-sm text-green-400">F=FF+[+F-F-F]-[-F+F+F]</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parámetros -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Parámetros</h3>
+                    <div class="space-y-5 slider-container">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Iteraciones</label>
+                                <span class="mono text-green-400" id="val-iterations">4</span>
+                            </div>
+                            <input type="range" id="slider-iterations" min="1" max="8" step="1" value="4">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Ángulo</label>
+                                <span class="mono text-green-400" id="val-angle">22°</span>
+                            </div>
+                            <input type="range" id="slider-angle" min="5" max="180" step="0.5" value="22">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Longitud</label>
+                                <span class="mono text-green-400" id="val-length">8</span>
+                            </div>
+                            <input type="range" id="slider-length" min="1" max="30" step="1" value="8">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Grosor</label>
+                                <span class="mono text-green-400" id="val-stroke">1</span>
+                            </div>
+                            <input type="range" id="slider-stroke" min="0.5" max="5" step="0.5" value="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Color</h3>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button class="color-btn w-full aspect-square rounded-lg bg-green-500 ring-2 ring-transparent hover:ring-white/50 transition" data-color="#22c55e"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-emerald-400 ring-2 ring-transparent hover:ring-white/50 transition" data-color="#34d399"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-cyan-400 ring-2 ring-transparent hover:ring-white/50 transition" data-color="#22d3ee"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-purple-500 ring-2 ring-transparent hover:ring-white/50 transition" data-color="#a855f7"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-orange-500 ring-2 ring-transparent hover:ring-white/50 transition" data-color="#f97316"></button>
+                    </div>
+                    <div class="mt-3 flex items-center gap-3">
+                        <label class="text-xs text-gray-500">Gradiente</label>
+                        <input type="checkbox" id="check-gradient" class="w-4 h-4 accent-green-500">
+                        <label class="text-xs text-gray-500 ml-4">Variar grosor</label>
+                        <input type="checkbox" id="check-taper" class="w-4 h-4 accent-green-500">
+                    </div>
+                </div>
+
+                <!-- Lindenmayer -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Aristid Lindenmayer, 1968</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Biólogo húngaro que creó los L-Systems para modelar el crecimiento de plantas y algas.
+                        Las mismas reglas generan desde helechos hasta curvas fractales como el dragón de Heighway.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ===== CONFIG =====
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let axiom = 'F';
+        let rules = { 'F': 'FF+[+F-F-F]-[-F+F+F]' };
+        let iterations = 4;
+        let angle = 22;
+        let length = 8;
+        let strokeWidth = 1;
+        let color = '#22c55e';
+        let useGradient = false;
+        let useTaper = false;
+
+        let currentString = '';
+        let segments = [];
+        let animationIndex = 0;
+        let isAnimating = false;
+        let animationId = null;
+
+        // ===== INIT =====
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width * 0.8, window.innerHeight - 280);
+
+            canvas.width = width * 2;
+            canvas.height = height * 2;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(2, 2);
+
+            generate();
+        }
+
+        // ===== L-SYSTEM GENERATION =====
+        function parseRules(rulesText) {
+            const parsed = {};
+            const lines = rulesText.split(/[,\n]/).map(l => l.trim()).filter(l => l);
+            for (const line of lines) {
+                const [key, value] = line.split('=').map(s => s.trim());
+                if (key && value) {
+                    parsed[key] = value;
+                }
+            }
+            return parsed;
+        }
+
+        function generateString(axiom, rules, iterations) {
+            let current = axiom;
+            for (let i = 0; i < iterations; i++) {
+                let next = '';
+                for (const char of current) {
+                    next += rules[char] || char;
+                }
+                current = next;
+                // Safety limit
+                if (current.length > 500000) {
+                    console.warn('String too long, stopping at iteration', i);
+                    break;
+                }
+            }
+            return current;
+        }
+
+        function calculateBounds(string, angle, length) {
+            let x = 0, y = 0;
+            let dir = -90; // Start pointing up
+            const stack = [];
+            let minX = 0, maxX = 0, minY = 0, maxY = 0;
+
+            for (const char of string) {
+                switch (char) {
+                    case 'F':
+                    case 'G':
+                        const rad = dir * Math.PI / 180;
+                        x += Math.cos(rad) * length;
+                        y += Math.sin(rad) * length;
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                        break;
+                    case '+':
+                        dir += angle;
+                        break;
+                    case '-':
+                        dir -= angle;
+                        break;
+                    case '[':
+                        stack.push({ x, y, dir });
+                        break;
+                    case ']':
+                        if (stack.length > 0) {
+                            const state = stack.pop();
+                            x = state.x;
+                            y = state.y;
+                            dir = state.dir;
+                        }
+                        break;
+                }
+            }
+
+            return { minX, maxX, minY, maxY, width: maxX - minX, height: maxY - minY };
+        }
+
+        function generateSegments(string, angle, length, offsetX, offsetY, scale) {
+            const segs = [];
+            let x = offsetX, y = offsetY;
+            let dir = -90;
+            const stack = [];
+            let depth = 0;
+            let maxDepth = 0;
+
+            for (const char of string) {
+                switch (char) {
+                    case 'F':
+                        const rad = dir * Math.PI / 180;
+                        const nx = x + Math.cos(rad) * length * scale;
+                        const ny = y + Math.sin(rad) * length * scale;
+                        segs.push({ x1: x, y1: y, x2: nx, y2: ny, depth });
+                        x = nx;
+                        y = ny;
+                        break;
+                    case 'G':
+                        const rad2 = dir * Math.PI / 180;
+                        x += Math.cos(rad2) * length * scale;
+                        y += Math.sin(rad2) * length * scale;
+                        break;
+                    case '+':
+                        dir += angle;
+                        break;
+                    case '-':
+                        dir -= angle;
+                        break;
+                    case '[':
+                        stack.push({ x, y, dir, depth });
+                        depth++;
+                        maxDepth = Math.max(maxDepth, depth);
+                        break;
+                    case ']':
+                        if (stack.length > 0) {
+                            const state = stack.pop();
+                            x = state.x;
+                            y = state.y;
+                            dir = state.dir;
+                            depth = state.depth;
+                        }
+                        break;
+                }
+            }
+
+            // Normalize depth for coloring
+            for (const seg of segs) {
+                seg.normalizedDepth = maxDepth > 0 ? seg.depth / maxDepth : 0;
+            }
+
+            return segs;
+        }
+
+        function generate() {
+            // Stop any ongoing animation
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            isAnimating = false;
+
+            // Parse rules from textarea
+            rules = parseRules(document.getElementById('input-rules').value);
+            axiom = document.getElementById('input-axiom').value || 'F';
+
+            // Generate string
+            currentString = generateString(axiom, rules, iterations);
+
+            // Calculate bounds
+            const bounds = calculateBounds(currentString, angle, length);
+
+            // Calculate scale and offset to fit in canvas
+            const padding = 40;
+            const availableWidth = width - padding * 2;
+            const availableHeight = height - padding * 2;
+
+            let scale = 1;
+            if (bounds.width > 0 && bounds.height > 0) {
+                scale = Math.min(availableWidth / bounds.width, availableHeight / bounds.height);
+            } else if (bounds.width > 0) {
+                scale = availableWidth / bounds.width;
+            } else if (bounds.height > 0) {
+                scale = availableHeight / bounds.height;
+            }
+
+            const offsetX = padding + (availableWidth - bounds.width * scale) / 2 - bounds.minX * scale;
+            const offsetY = padding + (availableHeight - bounds.height * scale) / 2 - bounds.minY * scale;
+
+            // Generate segments
+            segments = generateSegments(currentString, angle, length, offsetX, offsetY, scale);
+
+            // Update info
+            document.getElementById('info-iterations').textContent = iterations;
+            document.getElementById('info-symbols').textContent = currentString.length.toLocaleString();
+            document.getElementById('info-segments').textContent = segments.length.toLocaleString();
+
+            // Draw
+            animationIndex = segments.length;
+            draw();
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            const drawCount = Math.min(animationIndex, segments.length);
+
+            for (let i = 0; i < drawCount; i++) {
+                const seg = segments[i];
+
+                // Color
+                if (useGradient) {
+                    const hue = 100 + seg.normalizedDepth * 60; // Green to yellow
+                    ctx.strokeStyle = `hsl(${hue}, 70%, ${50 - seg.normalizedDepth * 20}%)`;
+                } else {
+                    ctx.strokeStyle = color;
+                }
+
+                // Width
+                if (useTaper) {
+                    ctx.lineWidth = strokeWidth * (1 - seg.normalizedDepth * 0.7);
+                } else {
+                    ctx.lineWidth = strokeWidth;
+                }
+
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(seg.x1, seg.y1);
+                ctx.lineTo(seg.x2, seg.y2);
+                ctx.stroke();
+            }
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw segments up to current index
+            const batchSize = Math.max(1, Math.floor(segments.length / 200));
+            animationIndex = Math.min(animationIndex + batchSize, segments.length);
+
+            for (let i = 0; i < animationIndex; i++) {
+                const seg = segments[i];
+
+                if (useGradient) {
+                    const hue = 100 + seg.normalizedDepth * 60;
+                    ctx.strokeStyle = `hsl(${hue}, 70%, ${50 - seg.normalizedDepth * 20}%)`;
+                } else {
+                    ctx.strokeStyle = color;
+                }
+
+                if (useTaper) {
+                    ctx.lineWidth = strokeWidth * (1 - seg.normalizedDepth * 0.7);
+                } else {
+                    ctx.lineWidth = strokeWidth;
+                }
+
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(seg.x1, seg.y1);
+                ctx.lineTo(seg.x2, seg.y2);
+                ctx.stroke();
+            }
+
+            if (animationIndex < segments.length) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                isAnimating = false;
+            }
+        }
+
+        // ===== EVENT HANDLERS =====
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('input-axiom').value = btn.dataset.axiom;
+                document.getElementById('input-rules').value = btn.dataset.rules.split(',').join('\n');
+
+                angle = parseFloat(btn.dataset.angle);
+                iterations = parseInt(btn.dataset.iterations);
+                length = parseFloat(btn.dataset.length);
+
+                document.getElementById('slider-angle').value = angle;
+                document.getElementById('val-angle').textContent = angle + '°';
+                document.getElementById('slider-iterations').value = iterations;
+                document.getElementById('val-iterations').textContent = iterations;
+                document.getElementById('slider-length').value = length;
+                document.getElementById('val-length').textContent = length;
+
+                // Visual feedback
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('ring-2', 'ring-green-500'));
+                btn.classList.add('ring-2', 'ring-green-500');
+
+                generate();
+            });
+        });
+
+        // Sliders
+        document.getElementById('slider-iterations').addEventListener('input', (e) => {
+            iterations = parseInt(e.target.value);
+            document.getElementById('val-iterations').textContent = iterations;
+        });
+        document.getElementById('slider-iterations').addEventListener('change', generate);
+
+        document.getElementById('slider-angle').addEventListener('input', (e) => {
+            angle = parseFloat(e.target.value);
+            document.getElementById('val-angle').textContent = angle + '°';
+        });
+        document.getElementById('slider-angle').addEventListener('change', generate);
+
+        document.getElementById('slider-length').addEventListener('input', (e) => {
+            length = parseFloat(e.target.value);
+            document.getElementById('val-length').textContent = length;
+        });
+        document.getElementById('slider-length').addEventListener('change', generate);
+
+        document.getElementById('slider-stroke').addEventListener('input', (e) => {
+            strokeWidth = parseFloat(e.target.value);
+            document.getElementById('val-stroke').textContent = strokeWidth;
+            draw();
+        });
+
+        // Colors
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                color = btn.dataset.color;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+                draw();
+            });
+        });
+
+        // Checkboxes
+        document.getElementById('check-gradient').addEventListener('change', (e) => {
+            useGradient = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('check-taper').addEventListener('change', (e) => {
+            useTaper = e.target.checked;
+            draw();
+        });
+
+        // Buttons
+        document.getElementById('btn-generate').addEventListener('click', generate);
+
+        document.getElementById('btn-animate').addEventListener('click', () => {
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            } else {
+                animationIndex = 0;
+                isAnimating = true;
+                animate();
+            }
+        });
+
+        // Editor changes
+        document.getElementById('input-axiom').addEventListener('change', generate);
+        document.getElementById('input-rules').addEventListener('change', generate);
+
+        // ===== START =====
+        window.addEventListener('load', () => {
+            init();
+            // Set first preset and color as active
+            document.querySelector('.preset-btn').classList.add('ring-2', 'ring-green-500');
+            document.querySelector('.color-btn').classList.add('ring-white');
+        });
+
+        window.addEventListener('resize', init);
+    </script>
+</body>
+</html>

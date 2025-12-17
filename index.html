@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Generative Art Lab - Arte Algorítmico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(236, 72, 153, 0.15);
+        }
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .card:hover .card-border {
+            opacity: 1;
+        }
+        .card-border {
+            position: absolute;
+            inset: 0;
+            border-radius: 1rem;
+            padding: 2px;
+            background: linear-gradient(135deg, #ec4899, #f97316, #eab308);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .preview-canvas {
+            border-radius: 0.5rem;
+        }
+        .equation {
+            font-family: 'JetBrains Mono', monospace;
+            font-style: normal;
+        }
+        .category-tag {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+        }
+        .art-symbol {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-pink-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="../Math Visual Lab/index.html" class="hover:text-pink-400 transition">Mathematics</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Generative Art Lab</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-pink-400 font-medium glow-text">Generative</span> Art Lab
+                    </h1>
+                    <p class="text-gray-600 text-sm mono">Donde la matemática pinta</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="art-symbol text-pink-400">~</span>
+                    <span class="art-symbol text-orange-400">*</span>
+                    <span class="art-symbol text-yellow-400">@</span>
+                    <span class="art-symbol text-rose-400">#</span>
+                    <a href="https://github.com/cjlkaiser-cpu" target="_blank" class="text-gray-500 hover:text-white transition ml-2">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <!-- Hero -->
+        <section class="text-center mb-16">
+            <h2 class="text-4xl font-light mb-4">
+                Arte <span class="text-pink-400 font-medium glow-text">algorítmico</span>
+            </h2>
+            <p class="text-gray-500 max-w-2xl mx-auto">
+                7 experiencias donde las ecuaciones crean belleza.
+                Patrones de Turing, gramáticas formales, campos de flujo y fractales vivos.
+            </p>
+        </section>
+
+        <!-- Grid de Simulaciones -->
+        <section class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+
+            <!-- 1. Reacción-Difusión -->
+            <a href="reaccion-difusion.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-reaction" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-pink-500/20 text-pink-400">Emergencia</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Reacción-Difusión</h3>
+                        <p class="text-gray-500 text-sm mb-3">Patrones de Turing vivos. Modelo Gray-Scott genera texturas orgánicas: coral, huellas dactilares, manchas de leopardo.</p>
+                        <div class="equation text-pink-400/70 text-sm mb-4">∂u/∂t = Dᵤ∇²u - uv² + F(1-u)</div>
+                        <span class="block w-full text-center py-2 bg-pink-500/10 text-pink-400 rounded-lg hover:bg-pink-500/20 transition text-sm font-medium">
+                            Generar Patrones →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 2. L-Systems -->
+            <a href="l-systems.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-lsystem" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-green-500/20 text-green-400">Gramáticas</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">L-Systems</h3>
+                        <p class="text-gray-500 text-sm mb-3">Gramáticas formales que generan plantas, árboles y fractales. Edita las reglas y observa cómo muta la estructura.</p>
+                        <div class="equation text-green-400/70 text-sm mb-4">F → F[+F]F[-F]F</div>
+                        <span class="block w-full text-center py-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition text-sm font-medium">
+                            Cultivar →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 3. Flow Fields -->
+            <a href="flow-fields.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-flowfield" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-cyan-500/20 text-cyan-400">Noise</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Flow Fields</h3>
+                        <p class="text-gray-500 text-sm mb-3">Miles de partículas siguiendo campos de Perlin Noise. Pinceladas estilo Van Gogh emergiendo del ruido coherente.</p>
+                        <div class="equation text-cyan-400/70 text-sm mb-4">θ(x,y) = noise(x·s, y·s) · 2π</div>
+                        <span class="block w-full text-center py-2 bg-cyan-500/10 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition text-sm font-medium">
+                            Fluir →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 4. Strange Attractors -->
+            <a href="strange-attractors.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-attractors" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-purple-500/20 text-purple-400">Caos</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Strange Attractors</h3>
+                        <p class="text-gray-500 text-sm mb-3">Galería de atractores caóticos: Rössler, Aizawa, Thomas, Halvorsen. Geometrías imposibles del caos determinista.</p>
+                        <div class="equation text-purple-400/70 text-sm mb-4">dx/dt = f(x,y,z), ...</div>
+                        <span class="block w-full text-center py-2 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition text-sm font-medium">
+                            Explorar Caos →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 5. Phyllotaxis -->
+            <a href="phyllotaxis.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-phyllotaxis" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-yellow-500/20 text-yellow-400">Fibonacci</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Phyllotaxis</h3>
+                        <p class="text-gray-500 text-sm mb-3">Espirales de Fibonacci en la naturaleza. Girasoles, piñas y suculentas emergen del ángulo áureo: 137.5°.</p>
+                        <div class="equation text-yellow-400/70 text-sm mb-4">θₙ = n · 137.507...°</div>
+                        <span class="block w-full text-center py-2 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 transition text-sm font-medium">
+                            Crecer →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 6. Fractales IFS -->
+            <a href="fractales-ifs.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-ifs" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-emerald-500/20 text-emerald-400">Fractales</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Fractales IFS</h3>
+                        <p class="text-gray-500 text-sm mb-3">Sistemas de Funciones Iteradas. Helecho de Barnsley, árboles fractales y estructuras autosimilares desde transformaciones afines.</p>
+                        <div class="equation text-emerald-400/70 text-sm mb-4">Tᵢ(x) = Aᵢx + bᵢ</div>
+                        <span class="block w-full text-center py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition text-sm font-medium">
+                            Iterar →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 7. Teselaciones Aperiódicas -->
+            <a href="teselaciones-aperiodicas.html" class="card-link">
+                <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                    <div class="card-border"></div>
+                    <div class="p-4">
+                        <canvas id="preview-penrose" class="preview-canvas w-full h-40 bg-black mb-4"></canvas>
+                        <span class="category-tag bg-orange-500/20 text-orange-400">Teselaciones</span>
+                        <h3 class="text-lg font-medium mb-1 mt-2">Teselaciones Aperiódicas</h3>
+                        <p class="text-gray-500 text-sm mb-3">Teselaciones de Penrose y Wang tiles. Cubrir el infinito sin repetirse jamás. La matemática de los cuasicristales.</p>
+                        <div class="equation text-orange-400/70 text-sm mb-4">φ = (1 + √5) / 2</div>
+                        <span class="block w-full text-center py-2 bg-orange-500/10 text-orange-400 rounded-lg hover:bg-orange-500/20 transition text-sm font-medium">
+                            Teselar →
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+        </section>
+
+        <!-- Tech Stack -->
+        <section class="text-center">
+            <h3 class="text-lg font-medium mb-4 text-gray-500">Tecnologías</h3>
+            <div class="flex flex-wrap justify-center gap-3">
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">Canvas 2D</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">Perlin Noise</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">Laplaciano</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">L-Systems</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">IFS</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">Runge-Kutta</span>
+                <span class="px-3 py-1.5 bg-gray-900 rounded-full text-sm text-gray-400 mono">Recursión</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-900 py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-6 text-center text-gray-600 text-sm mono">
+            Math Generative Art Lab · Donde las ecuaciones pintan
+        </div>
+    </footer>
+
+    <script>
+        const previews = {};
+        let time = 0;
+
+        function initPreviews() {
+            // 1. Reacción-Difusión
+            const reaction = document.getElementById('preview-reaction');
+            if (reaction) {
+                const w = reaction.width = reaction.offsetWidth * 2;
+                const h = reaction.height = reaction.offsetHeight * 2;
+                const size = 100;
+                const u = [], v = [];
+                for (let i = 0; i < size * size; i++) {
+                    u[i] = 1;
+                    v[i] = 0;
+                }
+                // Seed center
+                for (let y = 45; y < 55; y++) {
+                    for (let x = 45; x < 55; x++) {
+                        const idx = y * size + x;
+                        u[idx] = 0.5;
+                        v[idx] = 0.25;
+                    }
+                }
+                previews.reaction = {
+                    ctx: reaction.getContext('2d'),
+                    w, h, size, u, v,
+                    F: 0.055, k: 0.062
+                };
+            }
+
+            // 2. L-Systems
+            const lsystem = document.getElementById('preview-lsystem');
+            if (lsystem) {
+                previews.lsystem = {
+                    ctx: lsystem.getContext('2d'),
+                    w: lsystem.width = lsystem.offsetWidth * 2,
+                    h: lsystem.height = lsystem.offsetHeight * 2,
+                    drawn: false
+                };
+                drawLSystem(previews.lsystem);
+            }
+
+            // 3. Flow Fields
+            const flowfield = document.getElementById('preview-flowfield');
+            if (flowfield) {
+                const particles = [];
+                for (let i = 0; i < 200; i++) {
+                    particles.push({
+                        x: Math.random(),
+                        y: Math.random(),
+                        age: Math.random() * 50
+                    });
+                }
+                previews.flowfield = {
+                    ctx: flowfield.getContext('2d'),
+                    w: flowfield.width = flowfield.offsetWidth * 2,
+                    h: flowfield.height = flowfield.offsetHeight * 2,
+                    particles,
+                    hue: 180
+                };
+            }
+
+            // 4. Strange Attractors (Rössler)
+            const attractors = document.getElementById('preview-attractors');
+            if (attractors) {
+                previews.attractors = {
+                    ctx: attractors.getContext('2d'),
+                    w: attractors.width = attractors.offsetWidth * 2,
+                    h: attractors.height = attractors.offsetHeight * 2,
+                    x: 0.1, y: 0, z: 0,
+                    trail: []
+                };
+            }
+
+            // 5. Phyllotaxis
+            const phyllotaxis = document.getElementById('preview-phyllotaxis');
+            if (phyllotaxis) {
+                previews.phyllotaxis = {
+                    ctx: phyllotaxis.getContext('2d'),
+                    w: phyllotaxis.width = phyllotaxis.offsetWidth * 2,
+                    h: phyllotaxis.height = phyllotaxis.offsetHeight * 2,
+                    n: 0
+                };
+            }
+
+            // 6. Fractales IFS (Barnsley Fern)
+            const ifs = document.getElementById('preview-ifs');
+            if (ifs) {
+                previews.ifs = {
+                    ctx: ifs.getContext('2d'),
+                    w: ifs.width = ifs.offsetWidth * 2,
+                    h: ifs.height = ifs.offsetHeight * 2,
+                    x: 0, y: 0,
+                    points: []
+                };
+            }
+
+            // 7. Teselaciones (Penrose-like)
+            const penrose = document.getElementById('preview-penrose');
+            if (penrose) {
+                previews.penrose = {
+                    ctx: penrose.getContext('2d'),
+                    w: penrose.width = penrose.offsetWidth * 2,
+                    h: penrose.height = penrose.offsetHeight * 2,
+                    drawn: false
+                };
+                drawPenrose(previews.penrose);
+            }
+        }
+
+        // L-System drawer
+        function drawLSystem(l) {
+            l.ctx.fillStyle = '#000';
+            l.ctx.fillRect(0, 0, l.w, l.h);
+
+            const axiom = 'F';
+            const rules = { 'F': 'FF+[+F-F-F]-[-F+F+F]' };
+            let current = axiom;
+            for (let i = 0; i < 3; i++) {
+                let next = '';
+                for (const c of current) {
+                    next += rules[c] || c;
+                }
+                current = next;
+            }
+
+            const len = 4;
+            const angle = 25 * Math.PI / 180;
+            let x = l.w / 2, y = l.h - 20;
+            let dir = -Math.PI / 2;
+            const stack = [];
+
+            l.ctx.strokeStyle = '#22c55e';
+            l.ctx.lineWidth = 1;
+            l.ctx.beginPath();
+            l.ctx.moveTo(x, y);
+
+            for (const c of current) {
+                if (c === 'F') {
+                    x += Math.cos(dir) * len;
+                    y += Math.sin(dir) * len;
+                    l.ctx.lineTo(x, y);
+                } else if (c === '+') {
+                    dir += angle;
+                } else if (c === '-') {
+                    dir -= angle;
+                } else if (c === '[') {
+                    stack.push({ x, y, dir });
+                } else if (c === ']') {
+                    const state = stack.pop();
+                    x = state.x; y = state.y; dir = state.dir;
+                    l.ctx.moveTo(x, y);
+                }
+            }
+            l.ctx.stroke();
+            l.drawn = true;
+        }
+
+        // Penrose-like tiling
+        function drawPenrose(p) {
+            p.ctx.fillStyle = '#000';
+            p.ctx.fillRect(0, 0, p.w, p.h);
+
+            const phi = (1 + Math.sqrt(5)) / 2;
+            const size = 30;
+            const colors = ['#f97316', '#ea580c', '#c2410c', '#9a3412'];
+
+            for (let row = -2; row < 12; row++) {
+                for (let col = -2; col < 15; col++) {
+                    const x = col * size * 1.5 + (row % 2) * size * 0.75;
+                    const y = row * size * 0.866;
+
+                    // Draw rhombus
+                    const type = (row + col) % 2;
+                    const angleOffset = type * Math.PI / 5;
+
+                    p.ctx.fillStyle = colors[(row + col) % colors.length] + '60';
+                    p.ctx.strokeStyle = colors[(row + col) % colors.length];
+                    p.ctx.lineWidth = 1;
+
+                    p.ctx.beginPath();
+                    const angles = [0, Math.PI/5, Math.PI, Math.PI + Math.PI/5];
+                    for (let i = 0; i < 4; i++) {
+                        const a = angles[i] + angleOffset + time * 0.01;
+                        const r = i % 2 === 0 ? size / 2 : size / 2 / phi;
+                        const px = x + Math.cos(a) * r;
+                        const py = y + Math.sin(a) * r;
+                        if (i === 0) p.ctx.moveTo(px, py);
+                        else p.ctx.lineTo(px, py);
+                    }
+                    p.ctx.closePath();
+                    p.ctx.fill();
+                    p.ctx.stroke();
+                }
+            }
+            p.drawn = true;
+        }
+
+        // Simple Perlin-like noise
+        function noise(x, y) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+            return (Math.sin(X * 12.9898 + Y * 78.233) * 43758.5453) % 1;
+        }
+
+        function smoothNoise(x, y) {
+            const x0 = Math.floor(x), y0 = Math.floor(y);
+            const fx = x - x0, fy = y - y0;
+            const sx = fx * fx * (3 - 2 * fx);
+            const sy = fy * fy * (3 - 2 * fy);
+
+            const n00 = noise(x0, y0);
+            const n10 = noise(x0 + 1, y0);
+            const n01 = noise(x0, y0 + 1);
+            const n11 = noise(x0 + 1, y0 + 1);
+
+            const nx0 = n00 * (1 - sx) + n10 * sx;
+            const nx1 = n01 * (1 - sx) + n11 * sx;
+
+            return nx0 * (1 - sy) + nx1 * sy;
+        }
+
+        function animate() {
+            time += 0.016;
+
+            // 1. Reacción-Difusión (Gray-Scott)
+            if (previews.reaction) {
+                const r = previews.reaction;
+                const { size, u, v, F, k } = r;
+                const Du = 0.16, Dv = 0.08;
+                const dt = 1;
+
+                // One simulation step
+                const newU = [...u], newV = [...v];
+                for (let y = 1; y < size - 1; y++) {
+                    for (let x = 1; x < size - 1; x++) {
+                        const idx = y * size + x;
+                        const laplacianU = u[idx-1] + u[idx+1] + u[idx-size] + u[idx+size] - 4*u[idx];
+                        const laplacianV = v[idx-1] + v[idx+1] + v[idx-size] + v[idx+size] - 4*v[idx];
+                        const uvv = u[idx] * v[idx] * v[idx];
+                        newU[idx] = u[idx] + (Du * laplacianU - uvv + F * (1 - u[idx])) * dt;
+                        newV[idx] = v[idx] + (Dv * laplacianV + uvv - (k + F) * v[idx]) * dt;
+                    }
+                }
+                for (let i = 0; i < size * size; i++) {
+                    r.u[i] = Math.max(0, Math.min(1, newU[i]));
+                    r.v[i] = Math.max(0, Math.min(1, newV[i]));
+                }
+
+                // Render
+                const imgData = r.ctx.createImageData(r.w, r.h);
+                for (let py = 0; py < r.h; py++) {
+                    for (let px = 0; px < r.w; px++) {
+                        const sx = Math.floor(px / r.w * size);
+                        const sy = Math.floor(py / r.h * size);
+                        const val = r.v[sy * size + sx];
+                        const idx = (py * r.w + px) * 4;
+                        imgData.data[idx] = val * 236;     // Pink
+                        imgData.data[idx+1] = val * 72;
+                        imgData.data[idx+2] = val * 153;
+                        imgData.data[idx+3] = 255;
+                    }
+                }
+                r.ctx.putImageData(imgData, 0, 0);
+            }
+
+            // 3. Flow Fields
+            if (previews.flowfield) {
+                const f = previews.flowfield;
+                f.ctx.fillStyle = 'rgba(0,0,0,0.02)';
+                f.ctx.fillRect(0, 0, f.w, f.h);
+
+                f.hue = (f.hue + 0.1) % 360;
+
+                for (const p of f.particles) {
+                    const noiseVal = smoothNoise(p.x * 3 + time * 0.1, p.y * 3);
+                    const angle = noiseVal * Math.PI * 4;
+
+                    p.x += Math.cos(angle) * 0.003;
+                    p.y += Math.sin(angle) * 0.003;
+                    p.age++;
+
+                    if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1 || p.age > 100) {
+                        p.x = Math.random();
+                        p.y = Math.random();
+                        p.age = 0;
+                    }
+
+                    const hue = (f.hue + p.age) % 360;
+                    f.ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.8)`;
+                    f.ctx.fillRect(p.x * f.w, p.y * f.h, 2, 2);
+                }
+            }
+
+            // 4. Strange Attractors (Rössler)
+            if (previews.attractors) {
+                const a = previews.attractors;
+                const A = 0.2, B = 0.2, C = 5.7;
+                const dt = 0.02;
+
+                for (let i = 0; i < 3; i++) {
+                    const dx = -a.y - a.z;
+                    const dy = a.x + A * a.y;
+                    const dz = B + a.z * (a.x - C);
+                    a.x += dx * dt;
+                    a.y += dy * dt;
+                    a.z += dz * dt;
+                    a.trail.push({ x: a.x, y: a.y, z: a.z });
+                }
+
+                if (a.trail.length > 800) a.trail.splice(0, 3);
+
+                a.ctx.fillStyle = 'rgba(0,0,0,0.03)';
+                a.ctx.fillRect(0, 0, a.w, a.h);
+
+                const cx = a.w / 2, cy = a.h / 2;
+                const scale = 8;
+
+                if (a.trail.length > 1) {
+                    a.ctx.beginPath();
+                    for (let i = 0; i < a.trail.length; i++) {
+                        const p = a.trail[i];
+                        const px = cx + p.x * scale;
+                        const py = cy + p.y * scale;
+                        if (i === 0) a.ctx.moveTo(px, py);
+                        else a.ctx.lineTo(px, py);
+                    }
+                    const hue = (time * 30) % 360;
+                    a.ctx.strokeStyle = `hsl(${270 + Math.sin(time) * 30}, 70%, 60%)`;
+                    a.ctx.lineWidth = 1;
+                    a.ctx.stroke();
+                }
+            }
+
+            // 5. Phyllotaxis
+            if (previews.phyllotaxis) {
+                const p = previews.phyllotaxis;
+                const goldenAngle = 137.507764 * Math.PI / 180;
+
+                if (p.n === 0) {
+                    p.ctx.fillStyle = '#000';
+                    p.ctx.fillRect(0, 0, p.w, p.h);
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    const r = 3 * Math.sqrt(p.n);
+                    const theta = p.n * goldenAngle;
+                    const x = p.w / 2 + r * Math.cos(theta);
+                    const y = p.h / 2 + r * Math.sin(theta);
+
+                    const hue = (p.n * 2) % 360;
+                    p.ctx.fillStyle = `hsl(${40 + hue * 0.3}, 80%, 50%)`;
+                    const size = 2 + Math.sqrt(p.n) * 0.1;
+                    p.ctx.beginPath();
+                    p.ctx.arc(x, y, Math.min(size, 4), 0, Math.PI * 2);
+                    p.ctx.fill();
+
+                    p.n++;
+                }
+
+                if (p.n > 500) p.n = 0;
+            }
+
+            // 6. Fractales IFS (Barnsley Fern)
+            if (previews.ifs) {
+                const f = previews.ifs;
+
+                if (f.points.length === 0) {
+                    f.ctx.fillStyle = '#000';
+                    f.ctx.fillRect(0, 0, f.w, f.h);
+                }
+
+                for (let i = 0; i < 50; i++) {
+                    const r = Math.random();
+                    let newX, newY;
+
+                    if (r < 0.01) {
+                        newX = 0;
+                        newY = 0.16 * f.y;
+                    } else if (r < 0.86) {
+                        newX = 0.85 * f.x + 0.04 * f.y;
+                        newY = -0.04 * f.x + 0.85 * f.y + 1.6;
+                    } else if (r < 0.93) {
+                        newX = 0.2 * f.x - 0.26 * f.y;
+                        newY = 0.23 * f.x + 0.22 * f.y + 1.6;
+                    } else {
+                        newX = -0.15 * f.x + 0.28 * f.y;
+                        newY = 0.26 * f.x + 0.24 * f.y + 0.44;
+                    }
+
+                    f.x = newX;
+                    f.y = newY;
+
+                    const px = f.w / 2 + f.x * 35;
+                    const py = f.h - f.y * 30 - 10;
+
+                    f.ctx.fillStyle = `hsl(${140 + f.y * 10}, 70%, ${40 + f.y * 3}%)`;
+                    f.ctx.fillRect(px, py, 1, 1);
+
+                    f.points.push({ x: px, y: py });
+                }
+
+                if (f.points.length > 5000) {
+                    f.points = [];
+                    f.x = 0;
+                    f.y = 0;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('load', () => {
+            initPreviews();
+            animate();
+        });
+
+        window.addEventListener('resize', initPreviews);
+    </script>
+</body>
+</html>

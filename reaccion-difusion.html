@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reacción-Difusión - Gray-Scott</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        #canvas {
+            cursor: crosshair;
+            image-rendering: pixelated;
+        }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ec4899;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        .preset-btn {
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            transform: translateY(-2px);
+        }
+        .preset-btn.active {
+            ring: 2px;
+            ring-color: #ec4899;
+        }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-900 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <nav class="text-xs text-gray-600 mb-1">
+                        <a href="../../_portal/index.html" class="hover:text-pink-400 transition">EigenLab</a>
+                        <span class="mx-1">/</span>
+                        <a href="index.html" class="hover:text-pink-400 transition">Generative Art Lab</a>
+                        <span class="mx-1">/</span>
+                        <span class="text-gray-500">Reacción-Difusión</span>
+                    </nav>
+                    <h1 class="text-2xl font-light">
+                        <span class="text-pink-400 font-medium glow-text">Reacción</span>-Difusión
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="mono text-sm text-gray-500" id="fps">-- FPS</span>
+                    <button id="btn-pause" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition">
+                        Pausar
+                    </button>
+                    <button id="btn-reset" class="px-4 py-2 bg-pink-500/20 hover:bg-pink-500/30 text-pink-400 rounded-lg text-sm transition">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+            <!-- Canvas -->
+            <div class="space-y-4">
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-4 overflow-hidden">
+                    <canvas id="canvas" class="w-full rounded-lg"></canvas>
+                </div>
+                <p class="text-gray-600 text-sm text-center">
+                    Click y arrastra para añadir químico V · Rueda del mouse para cambiar tamaño del pincel
+                </p>
+            </div>
+
+            <!-- Panel de Control -->
+            <div class="space-y-6">
+                <!-- Ecuaciones -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Modelo Gray-Scott</h3>
+                    <div class="space-y-2 mono text-sm">
+                        <div class="text-pink-400/80">∂u/∂t = D<sub>u</sub>∇²u - uv² + F(1-u)</div>
+                        <div class="text-cyan-400/80">∂v/∂t = D<sub>v</sub>∇²v + uv² - (k+F)v</div>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-600">
+                        <p><strong>u</strong>: concentración químico A (sustrato)</p>
+                        <p><strong>v</strong>: concentración químico B (catalizador)</p>
+                        <p><strong>F</strong>: tasa de alimentación</p>
+                        <p><strong>k</strong>: tasa de eliminación</p>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Patrones</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.0545" data-k="0.062">
+                            <div class="font-medium text-pink-400">Coral</div>
+                            <div class="text-gray-600">F=0.0545 k=0.062</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.0367" data-k="0.0649">
+                            <div class="font-medium text-pink-400">Mitosis</div>
+                            <div class="text-gray-600">F=0.0367 k=0.0649</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.029" data-k="0.057">
+                            <div class="font-medium text-pink-400">Laberinto</div>
+                            <div class="text-gray-600">F=0.029 k=0.057</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.018" data-k="0.051">
+                            <div class="font-medium text-pink-400">Espirales</div>
+                            <div class="text-gray-600">F=0.018 k=0.051</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.014" data-k="0.045">
+                            <div class="font-medium text-pink-400">Ondas</div>
+                            <div class="text-gray-600">F=0.014 k=0.045</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.039" data-k="0.058">
+                            <div class="font-medium text-pink-400">Agujeros</div>
+                            <div class="text-gray-600">F=0.039 k=0.058</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.025" data-k="0.06">
+                            <div class="font-medium text-pink-400">Manchas</div>
+                            <div class="text-gray-600">F=0.025 k=0.06</div>
+                        </button>
+                        <button class="preset-btn px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-xs text-left transition" data-f="0.078" data-k="0.061">
+                            <div class="font-medium text-pink-400">Gusanos</div>
+                            <div class="text-gray-600">F=0.078 k=0.061</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Parámetros -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">Parámetros</h3>
+
+                    <div class="space-y-5 slider-container">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Feed Rate (F)</label>
+                                <span class="mono text-pink-400" id="val-f">0.055</span>
+                            </div>
+                            <input type="range" id="slider-f" min="0.01" max="0.1" step="0.001" value="0.055">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Kill Rate (k)</label>
+                                <span class="mono text-pink-400" id="val-k">0.062</span>
+                            </div>
+                            <input type="range" id="slider-k" min="0.03" max="0.07" step="0.001" value="0.062">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Tamaño Pincel</label>
+                                <span class="mono text-pink-400" id="val-brush">15</span>
+                            </div>
+                            <input type="range" id="slider-brush" min="5" max="50" step="1" value="15">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <label class="text-gray-400">Velocidad</label>
+                                <span class="mono text-pink-400" id="val-speed">10</span>
+                            </div>
+                            <input type="range" id="slider-speed" min="1" max="30" step="1" value="10">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Scheme -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Esquema de Color</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="color-btn w-full aspect-square rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="pink"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="cyan"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="green"></button>
+                        <button class="color-btn w-full aspect-square rounded-lg bg-gradient-to-br from-orange-400 to-red-600 ring-2 ring-transparent hover:ring-white/50 transition" data-scheme="fire"></button>
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div class="bg-gray-950 border border-gray-900 rounded-2xl p-5">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Alan Turing, 1952</h3>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        En su último paper, Turing propuso que los patrones biológicos
+                        (rayas de cebra, manchas de leopardo) emergen de reacciones químicas
+                        que se difunden e interactúan. El modelo Gray-Scott es una simplificación
+                        que captura esta emergencia.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ===== CONFIG =====
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, gridWidth, gridHeight;
+        const SCALE = 2; // Pixels per cell
+
+        let u, v, nextU, nextV;
+        let Du = 0.2097, Dv = 0.105;
+        let F = 0.055, k = 0.062;
+        let brushSize = 15;
+        let speed = 10;
+        let paused = false;
+        let colorScheme = 'pink';
+
+        let isDrawing = false;
+        let lastFrame = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+
+        // Color schemes
+        const colorSchemes = {
+            pink: (v) => {
+                const t = Math.min(1, v * 2);
+                return [
+                    Math.floor(236 * t),
+                    Math.floor(72 * t * 0.5),
+                    Math.floor(153 * t)
+                ];
+            },
+            cyan: (v) => {
+                const t = Math.min(1, v * 2);
+                return [
+                    Math.floor(34 * t + 20),
+                    Math.floor(211 * t),
+                    Math.floor(238 * t)
+                ];
+            },
+            green: (v) => {
+                const t = Math.min(1, v * 2);
+                return [
+                    Math.floor(34 * t),
+                    Math.floor(197 * t),
+                    Math.floor(94 * t)
+                ];
+            },
+            fire: (v) => {
+                const t = Math.min(1, v * 2);
+                if (t < 0.5) {
+                    return [
+                        Math.floor(255 * t * 2),
+                        Math.floor(100 * t * 2),
+                        0
+                    ];
+                } else {
+                    return [
+                        255,
+                        Math.floor(100 + 155 * (t - 0.5) * 2),
+                        Math.floor(200 * (t - 0.5) * 2)
+                    ];
+                }
+            }
+        };
+
+        // ===== INIT =====
+        function init() {
+            const container = canvas.parentElement;
+            width = container.clientWidth - 32;
+            height = Math.min(width * 0.7, window.innerHeight - 300);
+
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+
+            gridWidth = Math.floor(width / SCALE);
+            gridHeight = Math.floor(height / SCALE);
+
+            // Initialize arrays
+            const size = gridWidth * gridHeight;
+            u = new Float32Array(size);
+            v = new Float32Array(size);
+            nextU = new Float32Array(size);
+            nextV = new Float32Array(size);
+
+            reset();
+        }
+
+        function reset() {
+            // Fill with u=1, v=0
+            u.fill(1);
+            v.fill(0);
+
+            // Seed some random spots of v
+            const numSeeds = 20;
+            for (let s = 0; s < numSeeds; s++) {
+                const cx = Math.floor(Math.random() * gridWidth);
+                const cy = Math.floor(Math.random() * gridHeight);
+                const radius = 5 + Math.random() * 10;
+
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        if (dx * dx + dy * dy <= radius * radius) {
+                            const x = (cx + dx + gridWidth) % gridWidth;
+                            const y = (cy + dy + gridHeight) % gridHeight;
+                            const idx = y * gridWidth + x;
+                            u[idx] = 0.5;
+                            v[idx] = 0.25;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===== SIMULATION =====
+        function simulate() {
+            for (let iter = 0; iter < speed; iter++) {
+                for (let y = 0; y < gridHeight; y++) {
+                    for (let x = 0; x < gridWidth; x++) {
+                        const idx = y * gridWidth + x;
+
+                        // Neighbors with wrapping
+                        const left = y * gridWidth + ((x - 1 + gridWidth) % gridWidth);
+                        const right = y * gridWidth + ((x + 1) % gridWidth);
+                        const up = ((y - 1 + gridHeight) % gridHeight) * gridWidth + x;
+                        const down = ((y + 1) % gridHeight) * gridWidth + x;
+
+                        // Laplacian
+                        const lapU = u[left] + u[right] + u[up] + u[down] - 4 * u[idx];
+                        const lapV = v[left] + v[right] + v[up] + v[down] - 4 * v[idx];
+
+                        // Reaction
+                        const uvv = u[idx] * v[idx] * v[idx];
+
+                        // Gray-Scott equations
+                        nextU[idx] = u[idx] + Du * lapU - uvv + F * (1 - u[idx]);
+                        nextV[idx] = v[idx] + Dv * lapV + uvv - (k + F) * v[idx];
+
+                        // Clamp
+                        nextU[idx] = Math.max(0, Math.min(1, nextU[idx]));
+                        nextV[idx] = Math.max(0, Math.min(1, nextV[idx]));
+                    }
+                }
+
+                // Swap buffers
+                [u, nextU] = [nextU, u];
+                [v, nextV] = [nextV, v];
+            }
+        }
+
+        // ===== RENDER =====
+        function render() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            const colorFn = colorSchemes[colorScheme];
+
+            for (let py = 0; py < height; py++) {
+                for (let px = 0; px < width; px++) {
+                    const gx = Math.floor(px / SCALE);
+                    const gy = Math.floor(py / SCALE);
+                    const idx = gy * gridWidth + gx;
+                    const pIdx = (py * width + px) * 4;
+
+                    const [r, g, b] = colorFn(v[idx]);
+                    data[pIdx] = r;
+                    data[pIdx + 1] = g;
+                    data[pIdx + 2] = b;
+                    data[pIdx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // ===== DRAWING =====
+        function addChemical(canvasX, canvasY) {
+            const gx = Math.floor(canvasX / SCALE);
+            const gy = Math.floor(canvasY / SCALE);
+            const radius = Math.floor(brushSize / SCALE);
+
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (dx * dx + dy * dy <= radius * radius) {
+                        const x = (gx + dx + gridWidth) % gridWidth;
+                        const y = (gy + dy + gridHeight) % gridHeight;
+                        const idx = y * gridWidth + x;
+                        u[idx] = 0.5;
+                        v[idx] = 0.25;
+                    }
+                }
+            }
+        }
+
+        // ===== EVENT HANDLERS =====
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            addChemical(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            addChemical(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            brushSize = Math.max(5, Math.min(50, brushSize - e.deltaY * 0.05));
+            document.getElementById('slider-brush').value = brushSize;
+            document.getElementById('val-brush').textContent = Math.round(brushSize);
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            addChemical(touch.clientX - rect.left, touch.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            addChemical(touch.clientX - rect.left, touch.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchend', () => isDrawing = false);
+
+        // Sliders
+        document.getElementById('slider-f').addEventListener('input', (e) => {
+            F = parseFloat(e.target.value);
+            document.getElementById('val-f').textContent = F.toFixed(3);
+        });
+
+        document.getElementById('slider-k').addEventListener('input', (e) => {
+            k = parseFloat(e.target.value);
+            document.getElementById('val-k').textContent = k.toFixed(3);
+        });
+
+        document.getElementById('slider-brush').addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('val-brush').textContent = brushSize;
+        });
+
+        document.getElementById('slider-speed').addEventListener('input', (e) => {
+            speed = parseInt(e.target.value);
+            document.getElementById('val-speed').textContent = speed;
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                F = parseFloat(btn.dataset.f);
+                k = parseFloat(btn.dataset.k);
+                document.getElementById('slider-f').value = F;
+                document.getElementById('slider-k').value = k;
+                document.getElementById('val-f').textContent = F.toFixed(4);
+                document.getElementById('val-k').textContent = k.toFixed(4);
+
+                // Visual feedback
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('ring-2', 'ring-pink-500'));
+                btn.classList.add('ring-2', 'ring-pink-500');
+            });
+        });
+
+        // Color schemes
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorScheme = btn.dataset.scheme;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('ring-white'));
+                btn.classList.add('ring-white');
+            });
+        });
+
+        // Buttons
+        document.getElementById('btn-pause').addEventListener('click', (e) => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Reanudar' : 'Pausar';
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', reset);
+
+        // ===== MAIN LOOP =====
+        function loop() {
+            if (!paused) {
+                simulate();
+            }
+            render();
+
+            // FPS counter
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFrame >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastFrame = now;
+                document.getElementById('fps').textContent = fps + ' FPS';
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // ===== START =====
+        window.addEventListener('load', () => {
+            init();
+            // Set first preset as active
+            document.querySelector('.preset-btn').classList.add('ring-2', 'ring-pink-500');
+            // Set first color as active
+            document.querySelector('.color-btn').classList.add('ring-white');
+            loop();
+        });
+
+        window.addEventListener('resize', () => {
+            init();
+        });
+    </script>
+</body>
+</html>
