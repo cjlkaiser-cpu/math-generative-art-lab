@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automata Celular 3D - EigenLab WASM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="../../_wasm/eigenlab-core.js"></script>
+    <style>
+        :root {
+            --bg-primary: #030712;
+            --bg-secondary: #0f172a;
+            --bg-panel: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #f97316;
+            --accent-dim: rgba(249, 115, 22, 0.2);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .breadcrumb {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .breadcrumb a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .canvas-container {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas-3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .controls {
+            width: 320px;
+            background: var(--bg-panel);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+        .control-group {
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .control-group h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(249, 115, 22, 0.1);
+            border-radius: 0.5rem;
+            border: 1px solid var(--accent-dim);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .slider-row {
+            margin-bottom: 0.75rem;
+        }
+        .slider-row label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        .slider-row label span {
+            color: var(--accent);
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .btn-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            min-width: 70px;
+        }
+        .btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+        .btn.active { background: var(--accent); color: #000; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .stat-box {
+            background: var(--bg-primary);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .preset-btn {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.7rem;
+        }
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border-radius: 0.375rem;
+            font-size: 0.8rem;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .checkbox-row input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
+        .loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--bg-panel);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .help-text {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div>
+            <nav class="breadcrumb">
+                <a href="../../_portal/index.html">EigenLab</a> /
+                <a href="../../_portal/wasm-labs.html">WASM Labs</a> /
+                <span>Automata 3D</span>
+            </nav>
+            <h1>Automata Celular 3D</h1>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">
+            WASM + Three.js
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="canvas-container">
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+            <div id="canvas-3d"></div>
+        </div>
+
+        <aside class="controls">
+            <div class="control-group">
+                <h3>Reglas</h3>
+                <div class="equation">
+                    C(t+1) = f(N(C), B, S)
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    B = birth range, S = survival range<br>
+                    N(C) = neighbors count (Moore: 26, vN: 6)
+                </p>
+
+                <div class="slider-row">
+                    <label>Birth Min <span id="val-bmin">5</span></label>
+                    <input type="range" id="birth-min" min="1" max="26" value="5">
+                </div>
+                <div class="slider-row">
+                    <label>Birth Max <span id="val-bmax">7</span></label>
+                    <input type="range" id="birth-max" min="1" max="26" value="7">
+                </div>
+                <div class="slider-row">
+                    <label>Survive Min <span id="val-smin">4</span></label>
+                    <input type="range" id="survive-min" min="1" max="26" value="4">
+                </div>
+                <div class="slider-row">
+                    <label>Survive Max <span id="val-smax">6</span></label>
+                    <input type="range" id="survive-max" min="1" max="26" value="6">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Presets</h3>
+                <div class="btn-row">
+                    <button class="btn preset-btn active" data-preset="life">3D Life</button>
+                    <button class="btn preset-btn" data-preset="crystal">Crystal</button>
+                    <button class="btn preset-btn" data-preset="amoeba">Amoeba</button>
+                    <button class="btn preset-btn" data-preset="pyramids">Pyramids</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Simulacion</h3>
+                <div class="slider-row">
+                    <label>Velocidad <span id="val-speed">1</span>x</label>
+                    <input type="range" id="sim-speed" min="1" max="10" value="1">
+                </div>
+                <div class="slider-row">
+                    <label>Densidad inicial <span id="val-density">0.20</span></label>
+                    <input type="range" id="density" min="0.01" max="0.5" step="0.01" value="0.2">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="moore" checked>
+                    <label for="moore">Moore (26 vecinos)</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="periodic" checked>
+                    <label for="periodic">Bordes periodicos</label>
+                </div>
+                <div class="btn-row" style="margin-top: 0.5rem;">
+                    <button class="btn" id="btn-play">Play</button>
+                    <button class="btn" id="btn-step">Step</button>
+                    <button class="btn" id="btn-reset">Reset</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Patrones</h3>
+                <div class="btn-row">
+                    <button class="btn" data-pattern="0">Cubo</button>
+                    <button class="btn" data-pattern="1">Cruz</button>
+                    <button class="btn" data-pattern="2">Diagonal</button>
+                    <button class="btn" data-pattern="3">Cluster</button>
+                </div>
+                <p class="help-text">Click en el espacio 3D para colocar</p>
+            </div>
+
+            <div class="control-group">
+                <h3>Visualizacion</h3>
+                <div class="slider-row">
+                    <label>Tamano celda <span id="val-cellsize">1.0</span></label>
+                    <input type="range" id="cell-size" min="0.5" max="2" step="0.1" value="1">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="show-grid">
+                    <label for="show-grid">Mostrar grid</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="color-by-age" checked>
+                    <label for="color-by-age">Color por edad</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Estadisticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-alive">0</div>
+                        <div class="stat-label">Vivas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-gen">0</div>
+                        <div class="stat-label">Generacion</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-density">0%</div>
+                        <div class="stat-label">Densidad</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-fps">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // CONFIG
+        // ═══════════════════════════════════════════════════════════════════════
+        const CONFIG = {
+            gridSize: 32,
+            birthMin: 5,
+            birthMax: 7,
+            surviveMin: 4,
+            surviveMax: 6,
+            density: 0.2,
+            speed: 1,
+            playing: false,
+            colorByAge: true,
+            showGrid: false,
+            cellSize: 1.0,
+            selectedPattern: 0
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // WASM + THREE.JS SETUP
+        // ═══════════════════════════════════════════════════════════════════════
+        let Module, ca3d;
+        let scene, camera, renderer, controls;
+        let instancedMesh, gridHelper;
+
+        const container = document.getElementById('canvas-3d');
+        const loadingEl = document.getElementById('loading');
+
+        // Initialize Three.js scene
+        function initThree() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(2, 2, 2);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambient);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 5, 5);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0xf97316, 0.5, 10);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
+
+            // Grid helper
+            gridHelper = new THREE.GridHelper(2, CONFIG.gridSize, 0x333333, 0x222222);
+            gridHelper.visible = CONFIG.showGrid;
+            scene.add(gridHelper);
+
+            // Instanced mesh for cells
+            const geometry = new THREE.BoxGeometry(0.03, 0.03, 0.03);
+            const material = new THREE.MeshPhongMaterial({ vertexColors: true });
+
+            const maxCells = CONFIG.gridSize * CONFIG.gridSize * CONFIG.gridSize;
+            instancedMesh = new THREE.InstancedMesh(geometry, material, maxCells);
+            instancedMesh.count = 0;
+            scene.add(instancedMesh);
+
+            // Simple orbit controls (manual)
+            let isDragging = false;
+            let prevMouse = { x: 0, y: 0 };
+            let spherical = { theta: Math.PI / 4, phi: Math.PI / 4, radius: 3.5 };
+
+            function updateCamera() {
+                camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+                camera.position.y = spherical.radius * Math.cos(spherical.phi);
+                camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+                camera.lookAt(0, 0, 0);
+            }
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - prevMouse.x;
+                const dy = e.clientY - prevMouse.y;
+                spherical.theta += dx * 0.01;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy * 0.01));
+                updateCamera();
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('wheel', (e) => {
+                spherical.radius = Math.max(1.5, Math.min(10, spherical.radius + e.deltaY * 0.005));
+                updateCamera();
+                e.preventDefault();
+            });
+
+            updateCamera();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // WASM INITIALIZATION
+        // ═══════════════════════════════════════════════════════════════════════
+        async function initWASM() {
+            try {
+                Module = await EigenLabCore();
+
+                // Create CA3D config
+                const config = new Module.CA3DConfig();
+                config.gridSize = CONFIG.gridSize;
+                config.birthMin = CONFIG.birthMin;
+                config.birthMax = CONFIG.birthMax;
+                config.surviveMin = CONFIG.surviveMin;
+                config.surviveMax = CONFIG.surviveMax;
+                config.initialDensity = CONFIG.density;
+                config.mooreNeighborhood = true;
+                config.periodicBoundary = true;
+
+                ca3d = new Module.CellularAutomata3D(config);
+
+                config.delete();
+                loadingEl.style.display = 'none';
+
+                updateVisualization();
+                updateStats();
+
+            } catch (err) {
+                console.error('WASM init error:', err);
+                loadingEl.innerHTML = '<p style="color:#f97316;">Error cargando WASM</p>';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // VISUALIZATION
+        // ═══════════════════════════════════════════════════════════════════════
+        const dummy = new THREE.Object3D();
+        const color = new THREE.Color();
+
+        function updateVisualization() {
+            if (!ca3d || !instancedMesh) return;
+
+            const positions = Module.getCA3DAlivePositions(ca3d);
+            const ages = Module.getCA3DAliveAges(ca3d);
+            const count = ca3d.aliveCount();
+
+            instancedMesh.count = count;
+
+            const scale = CONFIG.cellSize * 0.03;
+
+            for (let i = 0; i < count; i++) {
+                const x = positions[i * 3];
+                const y = positions[i * 3 + 1];
+                const z = positions[i * 3 + 2];
+
+                dummy.position.set(x, y, z);
+                dummy.scale.set(scale, scale, scale);
+                dummy.updateMatrix();
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+
+                // Color by age or fixed
+                if (CONFIG.colorByAge) {
+                    const age = ages[i];
+                    // Young: orange -> Old: cyan
+                    const hue = 0.05 + age * 0.45; // 0.05 (orange) to 0.5 (cyan)
+                    color.setHSL(hue, 0.8, 0.5 + age * 0.2);
+                } else {
+                    color.setHex(0xf97316);
+                }
+                instancedMesh.setColorAt(i, color);
+            }
+
+            instancedMesh.instanceMatrix.needsUpdate = true;
+            if (instancedMesh.instanceColor) {
+                instancedMesh.instanceColor.needsUpdate = true;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // STATS
+        // ═══════════════════════════════════════════════════════════════════════
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+
+        function updateStats() {
+            if (!ca3d) return;
+
+            ca3d.computeStatistics();
+            const stats = ca3d.stats();
+
+            document.getElementById('stat-alive').textContent = stats.aliveCells.toLocaleString();
+            document.getElementById('stat-gen').textContent = stats.generation;
+            document.getElementById('stat-density').textContent = (stats.density * 100).toFixed(1) + '%';
+            document.getElementById('stat-fps').textContent = fps;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SIMULATION LOOP
+        // ═══════════════════════════════════════════════════════════════════════
+        let simFrame = 0;
+
+        function simulate() {
+            if (CONFIG.playing && ca3d) {
+                for (let i = 0; i < CONFIG.speed; i++) {
+                    ca3d.step();
+                }
+                updateVisualization();
+            }
+
+            renderer.render(scene, camera);
+
+            // FPS counter
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+            }
+
+            // Update stats periodically
+            simFrame++;
+            if (simFrame % 10 === 0) {
+                updateStats();
+            }
+
+            requestAnimationFrame(simulate);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PRESETS
+        // ═══════════════════════════════════════════════════════════════════════
+        const PRESETS = {
+            life: { bMin: 5, bMax: 7, sMin: 4, sMax: 6, density: 0.25, moore: true },
+            crystal: { bMin: 1, bMax: 3, sMin: 1, sMax: 4, density: 0.01, moore: false },
+            amoeba: { bMin: 9, bMax: 21, sMin: 5, sMax: 12, density: 0.35, moore: true },
+            pyramids: { bMin: 4, bMax: 4, sMin: 3, sMax: 5, density: 0.15, moore: true }
+        };
+
+        function applyPreset(name) {
+            const p = PRESETS[name];
+            if (!p) return;
+
+            CONFIG.birthMin = p.bMin;
+            CONFIG.birthMax = p.bMax;
+            CONFIG.surviveMin = p.sMin;
+            CONFIG.surviveMax = p.sMax;
+            CONFIG.density = p.density;
+
+            // Update sliders
+            document.getElementById('birth-min').value = p.bMin;
+            document.getElementById('birth-max').value = p.bMax;
+            document.getElementById('survive-min').value = p.sMin;
+            document.getElementById('survive-max').value = p.sMax;
+            document.getElementById('density').value = p.density;
+            document.getElementById('moore').checked = p.moore;
+
+            // Update displays
+            document.getElementById('val-bmin').textContent = p.bMin;
+            document.getElementById('val-bmax').textContent = p.bMax;
+            document.getElementById('val-smin').textContent = p.sMin;
+            document.getElementById('val-smax').textContent = p.sMax;
+            document.getElementById('val-density').textContent = p.density.toFixed(2);
+
+            // Update CA rules
+            if (ca3d) {
+                ca3d.setRules(p.bMin, p.bMax, p.sMin, p.sMax);
+                ca3d.randomize(p.density);
+                updateVisualization();
+                updateStats();
+            }
+
+            // Update preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === name);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI BINDINGS
+        // ═══════════════════════════════════════════════════════════════════════
+        function setupUI() {
+            // Sliders
+            const sliders = {
+                'birth-min': { config: 'birthMin', display: 'val-bmin' },
+                'birth-max': { config: 'birthMax', display: 'val-bmax' },
+                'survive-min': { config: 'surviveMin', display: 'val-smin' },
+                'survive-max': { config: 'surviveMax', display: 'val-smax' },
+                'density': { config: 'density', display: 'val-density', decimal: true },
+                'sim-speed': { config: 'speed', display: 'val-speed' },
+                'cell-size': { config: 'cellSize', display: 'val-cellsize', decimal: true }
+            };
+
+            Object.entries(sliders).forEach(([id, info]) => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', () => {
+                    const val = parseFloat(el.value);
+                    CONFIG[info.config] = val;
+                    document.getElementById(info.display).textContent = info.decimal ? val.toFixed(2) : val;
+
+                    if (['birthMin', 'birthMax', 'surviveMin', 'surviveMax'].includes(info.config)) {
+                        if (ca3d) {
+                            ca3d.setRules(CONFIG.birthMin, CONFIG.birthMax, CONFIG.surviveMin, CONFIG.surviveMax);
+                        }
+                        // Deselect preset buttons
+                        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                    }
+
+                    if (info.config === 'cellSize') {
+                        updateVisualization();
+                    }
+                });
+            });
+
+            // Checkboxes
+            document.getElementById('moore').addEventListener('change', (e) => {
+                // Would need to reinitialize CA for this change
+            });
+
+            document.getElementById('periodic').addEventListener('change', (e) => {
+                // Would need to reinitialize CA for this change
+            });
+
+            document.getElementById('show-grid').addEventListener('change', (e) => {
+                CONFIG.showGrid = e.target.checked;
+                if (gridHelper) gridHelper.visible = CONFIG.showGrid;
+            });
+
+            document.getElementById('color-by-age').addEventListener('change', (e) => {
+                CONFIG.colorByAge = e.target.checked;
+                updateVisualization();
+            });
+
+            // Buttons
+            document.getElementById('btn-play').addEventListener('click', () => {
+                CONFIG.playing = !CONFIG.playing;
+                document.getElementById('btn-play').textContent = CONFIG.playing ? 'Pause' : 'Play';
+                document.getElementById('btn-play').classList.toggle('active', CONFIG.playing);
+            });
+
+            document.getElementById('btn-step').addEventListener('click', () => {
+                if (ca3d) {
+                    ca3d.step();
+                    updateVisualization();
+                    updateStats();
+                }
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                if (ca3d) {
+                    ca3d.randomize(CONFIG.density);
+                    updateVisualization();
+                    updateStats();
+                }
+            });
+
+            // Presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+
+            // Patterns
+            document.querySelectorAll('[data-pattern]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    CONFIG.selectedPattern = parseInt(btn.dataset.pattern);
+                    document.querySelectorAll('[data-pattern]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            // Click to add pattern
+            renderer.domElement.addEventListener('click', (e) => {
+                if (!ca3d) return;
+
+                // Get click position in normalized coordinates
+                const rect = renderer.domElement.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                // Simple placement at center
+                const center = Math.floor(CONFIG.gridSize / 2);
+                ca3d.addPattern(center, center, center, CONFIG.selectedPattern);
+                updateVisualization();
+                updateStats();
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════════════════════════
+        initThree();
+        setupUI();
+        initWASM().then(() => {
+            simulate();
+        });
+    </script>
+</body>
+</html>
