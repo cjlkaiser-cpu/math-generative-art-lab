@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandelbulb - EigenLab WASM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="../../_wasm/eigenlab-core.js"></script>
+    <style>
+        :root {
+            --bg-primary: #030712;
+            --bg-secondary: #0f172a;
+            --bg-panel: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #a855f7;
+            --accent-dim: rgba(168, 85, 247, 0.2);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.25rem; font-weight: 500; }
+        .breadcrumb { font-size: 0.75rem; color: var(--text-muted); }
+        .breadcrumb a { color: var(--accent); text-decoration: none; }
+        .main {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .canvas-container {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas-3d { width: 100%; height: 100%; display: block; }
+        .controls {
+            width: 300px;
+            background: var(--bg-panel);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+        .control-group {
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .control-group h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 0.5rem;
+            border: 1px solid var(--accent-dim);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .slider-row { margin-bottom: 0.75rem; }
+        .slider-row label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        .slider-row label span { color: var(--accent); font-weight: 500; }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            min-width: 70px;
+        }
+        .btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+        .btn.active { background: var(--accent); color: #000; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .stat-box {
+            background: var(--bg-primary);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.1rem; font-weight: 600; color: var(--accent); }
+        .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+        .loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+        .loading-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--bg-panel);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            margin-top: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .preset-btn { padding: 0.4rem 0.6rem; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div>
+            <nav class="breadcrumb">
+                <a href="../../_portal/index.html">EigenLab</a> /
+                <a href="../../_portal/wasm-labs.html">WASM Labs</a> /
+                <span>Mandelbulb</span>
+            </nav>
+            <h1>Mandelbulb</h1>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">
+            WASM + Three.js
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="canvas-container">
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Generando fractal...</div>
+            </div>
+            <div id="canvas-3d"></div>
+        </div>
+
+        <aside class="controls">
+            <div class="control-group">
+                <h3>Fractal 3D</h3>
+                <div class="equation">
+                    z<sup>n</sup> + c
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Extension 3D del conjunto de Mandelbrot usando<br>
+                    algebra triplex en coordenadas esfericas.
+                </p>
+
+                <div class="slider-row">
+                    <label>Potencia (n) <span id="val-power">8</span></label>
+                    <input type="range" id="power" min="2" max="16" step="1" value="8">
+                </div>
+                <div class="slider-row">
+                    <label>Iteraciones <span id="val-iter">12</span></label>
+                    <input type="range" id="iterations" min="4" max="20" value="12">
+                </div>
+                <div class="slider-row">
+                    <label>Resolucion <span id="val-res">100</span></label>
+                    <input type="range" id="resolution" min="40" max="150" step="10" value="100">
+                </div>
+                <div class="slider-row">
+                    <label>Zoom <span id="val-zoom">1.30</span></label>
+                    <input type="range" id="zoom" min="1.0" max="2.0" step="0.05" value="1.3">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Presets</h3>
+                <div class="btn-row">
+                    <button class="btn preset-btn active" data-preset="classic">Clasico</button>
+                    <button class="btn preset-btn" data-preset="smooth">Suave</button>
+                    <button class="btn preset-btn" data-preset="spiky">Espinoso</button>
+                    <button class="btn preset-btn" data-preset="detail">Detalle</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Controles</h3>
+                <div class="btn-row">
+                    <button class="btn" id="btn-generate">Regenerar</button>
+                    <button class="btn" id="btn-rotate">Auto-rotar</button>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    Arrastra para rotar. Scroll para zoom.
+                </p>
+            </div>
+
+            <div class="control-group">
+                <h3>Visualizacion</h3>
+                <div class="slider-row">
+                    <label>Tamano punto <span id="val-pointsize">2.0</span></label>
+                    <input type="range" id="pointsize" min="0.5" max="5" step="0.5" value="2">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Estadisticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-points">0</div>
+                        <div class="stat-label">Puntos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-power">8</div>
+                        <div class="stat-label">Potencia</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-res">100</div>
+                        <div class="stat-label">Resolucion</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-fps">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // CONFIG
+        // ═══════════════════════════════════════════════════════════════════════
+        const CONFIG = {
+            power: 8,
+            iterations: 12,
+            resolution: 100,
+            zoom: 1.3,
+            threshold: 0.015,
+            pointSize: 2.0,
+            autoRotate: false
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // THREE.JS SETUP
+        // ═══════════════════════════════════════════════════════════════════════
+        let Module, mandelbulb;
+        let scene, camera, renderer, pointCloud;
+
+        const container = document.getElementById('canvas-3d');
+        const loadingEl = document.getElementById('loading');
+
+        function initThree() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(2.5, 2, 2.5);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Ambient light
+            const ambient = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambient);
+
+            // Point light
+            const pointLight = new THREE.PointLight(0xa855f7, 0.6, 10);
+            pointLight.position.set(2, 2, 2);
+            scene.add(pointLight);
+
+            // Orbit controls (manual)
+            let isDragging = false;
+            let prevMouse = { x: 0, y: 0 };
+            let spherical = { theta: Math.PI / 4, phi: Math.PI / 3, radius: 4 };
+
+            function updateCamera() {
+                camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+                camera.position.y = spherical.radius * Math.cos(spherical.phi);
+                camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+                camera.lookAt(0, 0, 0);
+            }
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - prevMouse.x;
+                const dy = e.clientY - prevMouse.y;
+                spherical.theta += dx * 0.01;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy * 0.01));
+                updateCamera();
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('wheel', (e) => {
+                spherical.radius = Math.max(1.5, Math.min(10, spherical.radius + e.deltaY * 0.005));
+                updateCamera();
+                e.preventDefault();
+            });
+
+            updateCamera();
+
+            // Auto-rotate
+            window.autoRotate = () => {
+                if (CONFIG.autoRotate) {
+                    spherical.theta += 0.005;
+                    updateCamera();
+                }
+            };
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // WASM + POINT CLOUD
+        // ═══════════════════════════════════════════════════════════════════════
+        async function initWASM() {
+            try {
+                Module = await EigenLabCore();
+                await generateMandelbulb();
+            } catch (err) {
+                console.error('WASM init error:', err);
+                loadingEl.innerHTML = '<p style="color:#a855f7;">Error cargando WASM</p>';
+            }
+        }
+
+        async function generateMandelbulb() {
+            loadingEl.style.display = 'flex';
+            document.querySelector('.loading-text').textContent = 'Generando fractal...';
+
+            // Use setTimeout to allow UI to update
+            await new Promise(r => setTimeout(r, 50));
+
+            // Create config
+            const config = new Module.MandelbulbConfig();
+            config.resolution = CONFIG.resolution;
+            config.maxIterations = CONFIG.iterations;
+            config.power = CONFIG.power;
+            config.bailout = 2.0;
+            config.zoom = CONFIG.zoom;
+            config.threshold = CONFIG.threshold;
+
+            // Create or update Mandelbulb
+            if (mandelbulb) {
+                mandelbulb.setConfig(config);
+            } else {
+                mandelbulb = new Module.Mandelbulb(config);
+            }
+
+            config.delete();
+
+            // Generate the surface
+            mandelbulb.generate();
+
+            // Update visualization
+            updatePointCloud();
+
+            loadingEl.style.display = 'none';
+            updateStats();
+        }
+
+        function updatePointCloud() {
+            if (!mandelbulb) return;
+
+            // Remove old point cloud
+            if (pointCloud) {
+                scene.remove(pointCloud);
+                pointCloud.geometry.dispose();
+                pointCloud.material.dispose();
+            }
+
+            const positions = Module.getMandelbulbPoints(mandelbulb);
+            const colors = Module.getMandelbulbColors(mandelbulb);
+            const count = mandelbulb.pointCount();
+
+            if (count === 0) {
+                console.warn('No points generated');
+                return;
+            }
+
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+
+            // Copy positions
+            const posArray = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) {
+                posArray[i] = positions[i];
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            // Copy colors
+            const colorArray = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) {
+                colorArray[i] = colors[i];
+            }
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+            // Create material
+            const material = new THREE.PointsMaterial({
+                size: CONFIG.pointSize * 0.01,
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+
+            pointCloud = new THREE.Points(geometry, material);
+            scene.add(pointCloud);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // STATS
+        // ═══════════════════════════════════════════════════════════════════════
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+
+        function updateStats() {
+            if (!mandelbulb) return;
+
+            mandelbulb.computeStatistics();
+            const stats = mandelbulb.stats();
+
+            document.getElementById('stat-points').textContent = stats.pointCount.toLocaleString();
+            document.getElementById('stat-power').textContent = stats.power;
+            document.getElementById('stat-res').textContent = stats.resolution;
+            document.getElementById('stat-fps').textContent = fps;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ANIMATION LOOP
+        // ═══════════════════════════════════════════════════════════════════════
+        function animate() {
+            window.autoRotate();
+            renderer.render(scene, camera);
+
+            // FPS counter
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                updateStats();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PRESETS
+        // ═══════════════════════════════════════════════════════════════════════
+        const PRESETS = {
+            classic: { power: 8, iterations: 12, resolution: 100, zoom: 1.3, threshold: 0.015 },
+            smooth: { power: 4, iterations: 10, resolution: 80, zoom: 1.5, threshold: 0.02 },
+            spiky: { power: 12, iterations: 15, resolution: 90, zoom: 1.2, threshold: 0.012 },
+            detail: { power: 8, iterations: 16, resolution: 150, zoom: 1.25, threshold: 0.008 }
+        };
+
+        function applyPreset(name) {
+            const p = PRESETS[name];
+            if (!p) return;
+
+            CONFIG.power = p.power;
+            CONFIG.iterations = p.iterations;
+            CONFIG.resolution = p.resolution;
+            CONFIG.zoom = p.zoom;
+            CONFIG.threshold = p.threshold;
+
+            // Update sliders
+            document.getElementById('power').value = p.power;
+            document.getElementById('iterations').value = p.iterations;
+            document.getElementById('resolution').value = p.resolution;
+            document.getElementById('zoom').value = p.zoom;
+
+            // Update displays
+            document.getElementById('val-power').textContent = p.power;
+            document.getElementById('val-iter').textContent = p.iterations;
+            document.getElementById('val-res').textContent = p.resolution;
+            document.getElementById('val-zoom').textContent = p.zoom.toFixed(2);
+
+            // Update preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === name);
+            });
+
+            generateMandelbulb();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI BINDINGS
+        // ═══════════════════════════════════════════════════════════════════════
+        function setupUI() {
+            // Sliders
+            document.getElementById('power').addEventListener('input', (e) => {
+                CONFIG.power = parseInt(e.target.value);
+                document.getElementById('val-power').textContent = CONFIG.power;
+            });
+
+            document.getElementById('iterations').addEventListener('input', (e) => {
+                CONFIG.iterations = parseInt(e.target.value);
+                document.getElementById('val-iter').textContent = CONFIG.iterations;
+            });
+
+            document.getElementById('resolution').addEventListener('input', (e) => {
+                CONFIG.resolution = parseInt(e.target.value);
+                document.getElementById('val-res').textContent = CONFIG.resolution;
+            });
+
+            document.getElementById('zoom').addEventListener('input', (e) => {
+                CONFIG.zoom = parseFloat(e.target.value);
+                document.getElementById('val-zoom').textContent = CONFIG.zoom.toFixed(2);
+            });
+
+            document.getElementById('pointsize').addEventListener('input', (e) => {
+                CONFIG.pointSize = parseFloat(e.target.value);
+                document.getElementById('val-pointsize').textContent = CONFIG.pointSize.toFixed(1);
+                if (pointCloud) {
+                    pointCloud.material.size = CONFIG.pointSize * 0.01;
+                }
+            });
+
+            // Buttons
+            document.getElementById('btn-generate').addEventListener('click', generateMandelbulb);
+
+            document.getElementById('btn-rotate').addEventListener('click', (e) => {
+                CONFIG.autoRotate = !CONFIG.autoRotate;
+                e.target.classList.toggle('active', CONFIG.autoRotate);
+            });
+
+            // Presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════════════════════════
+        initThree();
+        setupUI();
+        initWASM().then(() => {
+            animate();
+        });
+    </script>
+</body>
+</html>
