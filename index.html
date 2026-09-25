@@ -241,6 +241,44 @@
 
         </section>
 
+        <!-- Alto rendimiento (motor WASM): tarjetas añadidas para que todas las simulaciones del lab sean accesibles -->
+        <section id="wasm" class="mb-16">
+            <h2 class="text-2xl font-light mb-2">⚡ Alto rendimiento · Motor WASM</h2>
+            <p class="text-gray-500 text-sm mb-6">Simulaciones con el motor C++ de EigenLab compilado a WebAssembly: miles de partículas en tiempo real, en el navegador.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <a href="mandelbulb.html" class="card-link">
+                    <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                        <div class="card-border"></div>
+                        <div class="p-4">
+                            <img src="thumbs/mandelbulb.webp" alt="" loading="lazy" class="preview-canvas w-full h-40 object-cover bg-black mb-4 rounded-lg">
+                            <span class="category-tag bg-pink-500/20 text-pink-400">Fractal 3D</span> <span class="text-xs text-gray-500 ml-1">WASM</span>
+                            <h3 class="text-lg font-medium mb-1 mt-2">Mandelbulb</h3>
+                            <p class="text-gray-500 text-sm mb-3">Fractal 3D, extension del conjunto Mandelbrot. Triplex algebra, ray marching.</p>
+                            <div class="equation text-pink-400/70 text-sm mb-4">z ↦ zⁿ + c (álgebra triplex)</div>
+                            <span class="block w-full text-center py-2 bg-pink-500/10 text-pink-400 rounded-lg hover:bg-pink-500/20 transition text-sm font-medium">
+                                Explorar →
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                <a href="automata-celular-3d.html" class="card-link">
+                    <div class="card relative bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+                        <div class="card-border"></div>
+                        <div class="p-4">
+                            <img src="thumbs/automata-celular-3d.webp" alt="" loading="lazy" class="preview-canvas w-full h-40 object-cover bg-black mb-4 rounded-lg">
+                            <span class="category-tag bg-pink-500/20 text-pink-400">Vida 3D</span> <span class="text-xs text-gray-500 ml-1">WASM</span>
+                            <h3 class="text-lg font-medium mb-1 mt-2">Autómata Celular 3D</h3>
+                            <p class="text-gray-500 text-sm mb-3">3D Game of Life, crecimiento cristalino, amebas, piramides. Vecindad Moore y von Neumann.</p>
+                            <div class="equation text-pink-400/70 text-sm mb-4">B/S · vecindad de Moore</div>
+                            <span class="block w-full text-center py-2 bg-pink-500/10 text-pink-400 rounded-lg hover:bg-pink-500/20 transition text-sm font-medium">
+                                Evolucionar →
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
         <!-- Tech Stack -->
         <section class="text-center">
             <h3 class="text-lg font-medium mb-4 text-gray-500">Tecnologías</h3>
