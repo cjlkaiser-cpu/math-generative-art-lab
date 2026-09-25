@@ -401,7 +401,14 @@
             await new Promise(r => setTimeout(r, 50));
 
             // Create config
-            const config = new Module.MandelbulbConfig();
+            const config = { // value_object de Embind: objeto literal con todos los campos (valores por defecto de C++)
+                resolution: 128,
+                maxIterations: 12,
+                power: 8.0,
+                bailout: 2.0,
+                zoom: 1.5,
+                threshold: 0.01,
+            };
             config.resolution = CONFIG.resolution;
             config.maxIterations = CONFIG.iterations;
             config.power = CONFIG.power;
@@ -416,7 +423,6 @@
                 mandelbulb = new Module.Mandelbulb(config);
             }
 
-            config.delete();
 
             // Generate the surface
             mandelbulb.generate();

@@ -9,7 +9,7 @@
     <meta property="og:site_name" content="EigenLab">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_ES">
-    <meta property="og:title" content="Automata Celular 3D · Math Generative Art Lab">
+    <meta property="og:title" content="Autómata Celular 3D · Math Generative Art Lab">
     <meta property="og:description" content="3D Game of Life, crecimiento cristalino, amebas, piramides. Vecindad Moore y von Neumann.">
     <meta property="og:image" content="https://cjlkaiser-cpu.github.io/eigenlab/_portal/og/math-generative-art-lab.jpg">
     <meta property="og:image:width" content="1200">
@@ -493,7 +493,16 @@
                 Module = await EigenLabCore();
 
                 // Create CA3D config
-                const config = new Module.CA3DConfig();
+                const config = { // value_object de Embind: objeto literal con todos los campos (valores por defecto de C++)
+                gridSize: 32,
+                birthMin: 5,
+                birthMax: 7,
+                surviveMin: 4,
+                surviveMax: 6,
+                periodicBoundary: true,
+                mooreNeighborhood: true,
+                initialDensity: 0.2,
+            };
                 config.gridSize = CONFIG.gridSize;
                 config.birthMin = CONFIG.birthMin;
                 config.birthMax = CONFIG.birthMax;
@@ -505,7 +514,6 @@
 
                 ca3d = new Module.CellularAutomata3D(config);
 
-                config.delete();
                 loadingEl.style.display = 'none';
 
                 updateVisualization();
