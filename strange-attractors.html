@@ -20,6 +20,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        canvas { touch-action: none; } /* arrastrar con el dedo interactúa con la simulación en lugar de desplazar la página */
         body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glow-text { text-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
@@ -414,18 +415,18 @@
         });
         document.getElementById('btn-reset').addEventListener('click', reset);
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             isDragging = true;
             lastMouse = { x: e.clientX, y: e.clientY };
         });
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (!isDragging) return;
             rotY += (e.clientX - lastMouse.x) * 0.01;
             rotX += (e.clientY - lastMouse.y) * 0.01;
             lastMouse = { x: e.clientX, y: e.clientY };
         });
-        canvas.addEventListener('mouseup', () => isDragging = false);
-        canvas.addEventListener('mouseleave', () => isDragging = false);
+        canvas.addEventListener('pointerup', () => isDragging = false);
+        canvas.addEventListener('pointerleave', () => isDragging = false);
 
         window.addEventListener('load', () => {
             init();
